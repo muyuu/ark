@@ -38,6 +38,11 @@ async function installManifest(
   await $`sudo ${installArgs(pm, packages)}`;
 }
 
+/** 各 layer の app/linux ディレクトリ（存在するかは各処理側で判定）。 */
+function linuxDirs(roots: string[]): string[] {
+  return roots.map((root) => join(root, "app", "linux"));
+}
+
 async function runAll(commands: string[][]): Promise<void> {
   for (const argv of commands) {
     await $`sudo ${argv}`;
@@ -53,8 +58,8 @@ async function runAll(commands: string[][]): Promise<void> {
  * GUI 層（gui パッケージ / Flatpak）は GUI を持つ環境にだけ入れる。WSL は headless（GUI はホスト
  * Windows 側）なので GUI 層をスキップする。
  */
-export async function installLinuxSystem(repoRoot: string): Promise<void> {
-  const linuxDir = join(repoRoot, "app", "linux");
+export async function installLinuxSystem(roots: string[]): Promise<void> {
+  const dirs = linuxDirs(roots);
 
   const gui = !isWsl();
   if (!gui) log.info("WSL を検出: GUI 層はスキップします");
@@ -69,14 +74,18 @@ export async function installLinuxSystem(repoRoot: string): Promise<void> {
   await runAll(updateCommands(distro.packageManager));
 
   if (distro.name === "debian") {
-    await registerGpgKeys(join(linuxDir, "distro", "gpg-keys.txt"));
+    for (const dir of dirs) await registerGpgKeys(join(dir, "distro", "gpg-keys.txt"));
   }
 
-  await installManifest(linuxDir, distro.name, distro.packageManager, "packages");
+  for (const dir of dirs) {
+    await installManifest(dir, distro.name, distro.packageManager, "packages");
+  }
 
   if (gui) {
-    await installManifest(linuxDir, distro.name, distro.packageManager, "gui");
-    await setupFlatpak(distro.packageManager, join(linuxDir, "flatpak"));
+    for (const dir of dirs) {
+      await installManifest(dir, distro.name, distro.packageManager, "gui");
+    }
+    for (const dir of dirs) await setupFlatpak(distro.packageManager, join(dir, "flatpak"));
   }
 
   log.info("クリーンアップします...");

@@ -58,10 +58,7 @@ async function pathExists(path: string): Promise<boolean> {
  */
 export async function registerGpgKeys(keysFile: string): Promise<void> {
   const content = await readTextOr(keysFile, "");
-  if (!content) {
-    log.warning(`gpg-keys 設定が見つかりません: ${keysFile}`);
-    return;
-  }
+  if (!content) return;
 
   await $`sudo mkdir -p ${KEYRING_DIR}`;
 

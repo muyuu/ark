@@ -25,15 +25,15 @@ const CONFLICTING_APPS: Record<PackageManager, string[]> = {
  * 競合する distro 版を削除してから flathub から各アプリを入れる。
  */
 export async function setupFlatpak(pm: PackageManager, flatpakfilePath: string): Promise<void> {
+  const apps = parseFlatpakfile(await readTextOr(flatpakfilePath, ""));
+  if (apps.length === 0) return;
+
   if (!(await $.commandExists("flatpak"))) {
     log.info("Flatpak をインストールします");
     await $`sudo ${installArgs(pm, ["flatpak"])}`;
   }
 
   await $`flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo`;
-
-  const apps = parseFlatpakfile(await readTextOr(flatpakfilePath, ""));
-  if (apps.length === 0) return;
 
   log.info("競合する distro 版アプリを削除します");
   await $`sudo ${purgeArgs(pm, CONFLICTING_APPS[pm])}`.noThrow();

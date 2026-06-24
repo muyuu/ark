@@ -46,8 +46,11 @@ function fileExists(path: string): boolean {
  * 更新 → サードパーティ tap の trust → 対象 Brewfile の bundle、の順に実行する。
  * tap の trust は bundle より前に行う（新しい Homebrew は untrusted な tap を無視し bundle が中断するため）。
  * tap（cask 用）は macOS でのみ trust する。
+ *
+ * roots は core → overlay の合成順。各 layer の Brewfile / trusted_taps を順に適用する
+ * （存在しないものはスキップ）。
  */
-export async function installBrew(repoRoot: string): Promise<void> {
+export async function installBrew(roots: string[]): Promise<void> {
   if (!(await $.commandExists("brew"))) {
     log.warning("⚠️ Homebrew がインストールされていません");
     return;
@@ -58,8 +61,9 @@ export async function installBrew(repoRoot: string): Promise<void> {
   await $`brew upgrade -f`;
 
   if (Deno.build.os === "darwin") {
-    const tapsFile = join(repoRoot, "app", "macos", "trusted_taps");
-    if (fileExists(tapsFile)) {
+    for (const root of roots) {
+      const tapsFile = join(root, "app", "macos", "trusted_taps");
+      if (!fileExists(tapsFile)) continue;
       log.info("🔑 サードパーティ tap を信頼しています...");
       for (const tap of parseTrustedTaps(await Deno.readTextFile(tapsFile))) {
         await $`brew tap ${tap}`.quiet().noThrow();
@@ -68,9 +72,12 @@ export async function installBrew(repoRoot: string): Promise<void> {
     }
   }
 
-  for (const file of selectBrewfiles(Deno.build.os, repoRoot)) {
-    log.info(`📦 ${file} を bundle しています...`);
-    await $`brew bundle --file=${file} --no-upgrade`;
+  for (const root of roots) {
+    for (const file of selectBrewfiles(Deno.build.os, root)) {
+      if (!fileExists(file)) continue;
+      log.info(`📦 ${file} を bundle しています...`);
+      await $`brew bundle --file=${file} --no-upgrade`;
+    }
   }
 
   log.success("✅ Homebrew アプリケーションのインストールが完了しました");

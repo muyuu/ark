@@ -10,6 +10,10 @@ rust = "latest"
 description = "app/ の宣言を適用してパッケージを導入する（brew /(Linux)システム層 /(Windows)winget）"
 run = "deno run -A engine/install.ts"
 
+[tasks.overlay]
+description = "overlays.toml に登録した private overlay を取得（clone / pull）する"
+run = "deno run -A engine/overlay-sync.ts"
+
 [tasks.link-dotfiles]
 description = "config/ を $HOME へ symlink で展開する"
 run = "deno run -A engine/link-dotfiles.ts"

@@ -177,3 +177,9 @@ settings.json の `permissions.allow` でも一部を allowlist 化している�
 4. **コメント不整合**: コード変更によって既存コメントの内容が古くなってないか。type 表記 (refactor/feat/fix) と実体が合ってるか。
 
 普通の変更で見落としがちな観点。後で発覚すると修正コストが高い。レビュアーにも丁寧なコミットを提供できる。
+
+## overlay の追記
+
+業務・個人ごとの追記は overlay が `~/.claude/work.md` 等を提供する。あれば取り込む（無ければ無視される）。
+
+@~/.claude/work.md

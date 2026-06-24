@@ -18,3 +18,6 @@
 	insteadOf = https://github.com/
 [init]
 	defaultBranch = main
+# overlay が ~/.gitconfig.local を提供すれば業務メール等の上書きを取り込む（無ければ git が無視）
+[include]
+	path = ~/.gitconfig.local

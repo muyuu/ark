@@ -94,6 +94,15 @@ async function registerKeyOnGithub(keyfile: string): Promise<void> {
  * メールは git の user.email を使い、鍵名は id_ed25519 固定。GitHub の認証自体は shell 側で済ませておく。
  */
 export async function setupGithubSsh(homeDir: string): Promise<void> {
+  // 既に github.com の SSH 設定があるマシンには触らない（鍵を二重に作って登録しないため）。
+  const configPath = join(homeDir, ".ssh", "config");
+  if (hasGithubHost(await readFileOr(configPath, ""))) {
+    log.success(
+      "✅ ~/.ssh/config に github.com 設定済みのため SSH 鍵のセットアップをスキップします",
+    );
+    return;
+  }
+
   const email = (await $`git config --global user.email`.noThrow().text()).trim() ||
     "ark@localhost";
   const keyfile = join(homeDir, ".ssh", "id_ed25519");

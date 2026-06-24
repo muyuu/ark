@@ -102,3 +102,19 @@ export async function setupGithubSsh(homeDir: string): Promise<void> {
   await ensureSshConfig(homeDir, keyfile);
   await registerKeyOnGithub(keyfile);
 }
+
+/**
+ * private overlay を引けるよう GitHub 認証と SSH 鍵を整える。gh が未認証ならブラウザ認証
+ * （対話。`ark overlay add` を対話シェルから叩く前提）を行い、続けて SSH 鍵を用意・登録する。
+ */
+export async function ensureGithubSshReady(homeDir: string): Promise<void> {
+  if (!(await $.commandExists("gh"))) {
+    log.warning("⚠️ GitHub CLI が無いため認証をスキップします（private overlay は取得できません）");
+    return;
+  }
+  if ((await $`gh auth status`.noThrow().quiet()).code !== 0) {
+    log.info("▶ GitHub にログインします（ブラウザ認証）...");
+    await $`gh auth login --git-protocol ssh --web`;
+  }
+  await setupGithubSsh(homeDir);
+}

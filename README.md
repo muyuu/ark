@@ -33,8 +33,15 @@ command/                       # 自前コマンド（Rust）
 
 ## overlay（任意）
 
-private repo を重ねれば、core に置けない設定（業務用・個人用など）を同じ仕組みで足せる。
-`~/.config/ark/overlays.toml` に登録すると、bootstrap が core 適用後に取得・合成する。
+private repo を重ねれば、core に置けない設定（業務用・個人用など）を同じ仕組みで足せる。bootstrap 後に:
+
+```sh
+ark overlay add muyuu/ark-personal   # 登録 → GitHub 認証 → ghq ツリーへ取得
+ark update                           # core/overlay を最新化して適用
+```
+
+`overlay add` は `owner/repo` でも完全な git URL でも指定できる。登録は machine-local の
+`~/.config/ark/overlays.toml` に書かれ、以降 `ark update` で取得・合成される。
 
 ## ドキュメント
 

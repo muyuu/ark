@@ -1,4 +1,5 @@
-import { join } from "@std/path";
+import { dirname, join } from "@std/path";
+import { ensureDir } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
 import { $ } from "@david/dax";
 import { log } from "./logger.ts";
@@ -32,6 +33,46 @@ export function ghqPath(ghqRoot: string, url: string): string | undefined {
   if (!m) return undefined;
   const [, host, path] = m;
   return join(ghqRoot, host, ...path.split("/"));
+}
+
+/**
+ * overlay の指定を git URL に正規化する。`git@…` / `https://…` 等はそのまま、`owner/repo`
+ * の GitHub ショートハンドは SSH URL（`git@github.com:owner/repo.git`）に展開する。
+ */
+export function normalizeRepoUrl(spec: string): string {
+  if (/^(git@|ssh:\/\/|https?:\/\/)/.test(spec)) return spec;
+  if (/^[^/\s]+\/[^/\s]+$/.test(spec)) return `git@github.com:${spec.replace(/\.git$/, "")}.git`;
+  return spec;
+}
+
+/** git URL から overlay 名を導く（リポジトリ名。末尾の `.git`・スラッシュは除く）。 */
+export function nameFromUrl(url: string): string {
+  const trimmed = url.replace(/\/+$/, "").replace(/\.git$/, "");
+  return trimmed.split(/[/:]/).pop() ?? url;
+}
+
+/**
+ * overlay を overlays.toml に登録する（無ければ作成）。同名・同 URL が既にあれば何もしない。
+ * 追記したら true、既存なら false を返す。
+ */
+export async function addOverlay(homeDir: string, name: string, url: string): Promise<boolean> {
+  const existing = await loadOverlays(homeDir);
+  if (existing.some((o) => o.name === name || o.url === url)) return false;
+
+  const path = overlaysConfigPath(homeDir);
+  await ensureDir(dirname(path));
+  let current = "";
+  try {
+    current = await Deno.readTextFile(path);
+  } catch (err) {
+    if (!(err instanceof Deno.errors.NotFound)) throw err;
+  }
+  const sep = current.length > 0 && !current.endsWith("\n") ? "\n" : "";
+  await Deno.writeTextFile(
+    path,
+    `${current}${sep}\n[[overlay]]\nname = "${name}"\nurl  = "${url}"\n`,
+  );
+  return true;
 }
 
 /** 登録された overlay を読み込む。登録ファイルが無ければ空配列。 */

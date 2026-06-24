@@ -15,7 +15,7 @@ description = "宣言（app/・overlay 含む）に無いのに導入済みの�
 run = "deno run -A engine/audit.ts"
 
 [tasks.overlay]
-description = "overlays.toml に登録した private overlay を ghq ツリーへ取得（clone / pull）する"
+description = "overlay を取得する。`overlay add <git-url>` で登録＋認証＋取得、引数なしで登録済みを取得"
 run = "deno run -A engine/overlay-sync.ts"
 
 [tasks.update]

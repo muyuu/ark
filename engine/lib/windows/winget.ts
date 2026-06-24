@@ -10,10 +10,15 @@ export function parseWingetfile(content: string): string[] {
     .filter((line) => line.length > 0);
 }
 
-/** 指定 ID が winget で導入済みか。winget 管理外（野良）のアプリは検出できない点に注意。 */
+/**
+ * 指定 ID が winget で導入済みか。winget 管理外（野良）のアプリは検出できない点に注意。
+ *
+ * 終了コードは winget の版によって当てにならないため、出力に ID が現れるかで判定する。
+ * 初回は source の利用規約同意が要るので --accept-source-agreements を付ける。
+ */
 async function isInstalled(id: string): Promise<boolean> {
-  const result = await $`winget list --id ${id} -e`.noThrow().quiet();
-  return result.code === 0;
+  const out = await $`winget list --id ${id} -e --accept-source-agreements`.noThrow().text();
+  return out.includes(id);
 }
 
 /**

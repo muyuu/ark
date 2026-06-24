@@ -38,11 +38,14 @@ if [ "$(uname)" = "Linux" ]; then
   done
 fi
 
-# ark を HTTPS でクローン（SSH 鍵が未登録でも可）。取得済みなら何もしない
+# ark を HTTPS でクローン（SSH 鍵が未登録でも可）。取得済みなら最新へ更新する。
 if [ ! -d "$ARK_DIR/.git" ]; then
   echo "📦 ark リポジトリをクローンしています..."
   mkdir -p "$(dirname "$ARK_DIR")"
   git clone https://github.com/muyuu/ark.git "$ARK_DIR"
+else
+  echo "🔄 ark を最新へ更新します..."
+  git -C "$ARK_DIR" pull --ff-only || true
 fi
 
 cd "$ARK_DIR"

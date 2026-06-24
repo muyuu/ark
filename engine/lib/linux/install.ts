@@ -25,7 +25,7 @@ function existsSync(path: string): boolean {
  * DEBIAN_FRONTEND=noninteractive を渡して既定値で進める（dnf/pacman では無害な環境変数）。
  */
 function sudoPm(argv: string[]): ReturnType<typeof $> {
-  return $`sudo DEBIAN_FRONTEND=noninteractive ${argv}`;
+  return $`sudo env DEBIAN_FRONTEND=noninteractive ${argv}`;
 }
 
 /** distro PM 用のパッケージ manifest（packages / gui）を論理名→実名に変換して導入する。 */

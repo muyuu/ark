@@ -31,10 +31,12 @@ ark は macOS / Linux（WSL）/ native Windows それぞれのマシン構成を
 ## パッケージ（app/）
 
 宣言は OS 別の manifest に置く（`common` は macOS/Linux 共通）。導入対象は OS と環境（GUI の有無など）で
-決まり、GUI 向けの宣言は GUI を持つ環境にだけ適用される（環境は自動判定で、手動フラグは持たない）。
+決まり、GUI / デスクトップ向けの宣言は GUI を持つ環境にだけ適用される（環境は自動判定で、手動フラグは
+持たない）。具体的には CLI/システム層（`common` / `packages`）は常に、GUI 層（`gui` / `flatpak` /
+`custom`）は GUI 環境のみ。headless（WSL 等）では GUI 層をスキップする。
 
-winget/Store に載らない「野良」アプリは段階で扱う: ①宣言（manifest）→ ②custom（engine の個別インストーラ）
-→ ③manual-tracked（記録のみ・audit で欠落検知）。
+winget/Store に載らない「野良」アプリは段階で扱う: ①宣言（manifest）→ ②custom（engine の個別インストーラ・
+現状すべてデスクトップアプリなので GUI 環境のみ実行）→ ③manual-tracked（記録のみ・audit で欠落検知）。
 
 ## dotfiles（config/）
 

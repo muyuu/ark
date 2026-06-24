@@ -4,6 +4,7 @@ import { installBrew } from "./lib/brew.ts";
 import { buildCommands } from "./lib/command.ts";
 import { runCustomInstallers } from "./lib/custom.ts";
 import { installLinuxSystem } from "./lib/linux/install.ts";
+import { isWsl } from "./lib/linux/wsl.ts";
 import { installWindows } from "./lib/windows/install.ts";
 import { layerRoots } from "./lib/overlay.ts";
 import { setupZsh } from "./lib/zsh.ts";
@@ -31,7 +32,10 @@ if (import.meta.main) {
   } else {
     await installBrew(roots);
     if (Deno.build.os === "linux") await installLinuxSystem(roots);
-    await runCustomInstallers(roots, Deno.build.os === "darwin" ? "macos" : "linux");
+    // custom installer は現状すべて GUI/デスクトップアプリなので GUI 環境のみで実行する
+    // （macOS は常に GUI、Linux は非 WSL のときだけ）。headless では reaper 等を入れない。
+    const gui = Deno.build.os === "linux" ? !isWsl() : true;
+    if (gui) await runCustomInstallers(roots, Deno.build.os === "darwin" ? "macos" : "linux");
     await buildCommands(repoRoot, home);
     await setupZsh(home);
   }

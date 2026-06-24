@@ -10,6 +10,10 @@ rust = "latest"
 description = "app/ の宣言を適用してパッケージを導入する（brew /(Linux)システム層 /(Windows)winget）"
 run = "deno run -A engine/install.ts"
 
+[tasks.audit]
+description = "宣言（app/・overlay 含む）に無いのに導入済みのパッケージを棚卸しする（変更はしない）"
+run = "deno run -A engine/audit.ts"
+
 [tasks.overlay]
 description = "overlays.toml に登録した private overlay を ghq ツリーへ取得（clone / pull）する"
 run = "deno run -A engine/overlay-sync.ts"

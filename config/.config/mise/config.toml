@@ -1,0 +1,11 @@
+[settings]
+experimental = true
+paranoid = false
+
+[tools]
+node = "lts"
+deno = "latest"
+go = "latest"
+rust = "latest"
+fnox = "latest"
+"npm:@devcontainers/cli" = "latest"

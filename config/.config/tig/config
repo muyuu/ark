@@ -1,0 +1,69 @@
+# -------------------------------------------
+# 表示設定
+# -------------------------------------------
+set main-view = id date author commit-title:graph=yes,refs=yes  # メインビューの列構成
+set id-width = 8                        # コミットハッシュの表示桁数
+set blame-options = -C -C -C            # blame時にコピー元も追跡
+set horizontal-scroll = 33%             # 横スクロール量
+set show-notes = yes                    # gitノートを表示
+set show-changes = yes                  # 未コミットの変更を表示
+set split-view-height = 80%             # 分割ビューの高さ
+set status-show-untracked-dirs = yes    # 未追跡ディレクトリを表示
+set tab-size = 2                        # タブ幅
+set diff-context = 3                    # 差分の前後表示行数
+set ignore-space = some                 # 空白変更を一部無視
+set commit-order = topo                 # トポロジカル順でコミット表示
+set ignore-case = yes                   # 検索時に大文字小文字を無視
+set wrap-lines = yes                    # 行を折り返す
+set focus-child = yes                   # 子ビューに自動フォーカス
+
+# 行番号表示
+set pager-view  = line-number:yes,interval=1 text  # ページャーに行番号表示
+set stage-view  = line-number:yes,interval=1 text  # ステージビューに行番号表示
+set log-view    = line-number:yes,interval=1 text  # ログビューに行番号表示
+set blob-view   = line-number:yes,interval=1 text  # ファイル内容に行番号表示
+set diff-view   = line-number:yes,interval=1 text:yes,commit-title-overflow=no  # 差分ビューに行番号表示
+
+# -------------------------------------------
+# 色設定
+# -------------------------------------------
+color cursor black green bold           # カーソル行（黒文字・緑背景・太字）
+color title-focus black blue bold       # アクティブウィンドウのタイトル
+color title-blur black blue             # 非アクティブウィンドウのタイトル
+
+# -------------------------------------------
+# 共通キーバインド (generic)
+# -------------------------------------------
+bind generic F        @git fetch --all --prune                                          # fetch
+bind generic P        @git pull origin %(branch)                                        # pull
+bind generic U        ?git push -u origin %(branch)                                     # push
+bind generic <Ctrl-r> refresh                                                           # 再読み込み
+bind generic ?        !bash -c "grep '^bind' $HOME/.config/tig/config | less -X"        # キーバインド一覧
+
+# -------------------------------------------
+# main view (コミット履歴)
+# -------------------------------------------
+bind main    C        @git switch -c "%(prompt Enter new branch name: )" %(commit)      # 新規ブランチ作成
+bind main    I        ?git rebase -i %(commit)^                                         # rebase -i
+bind main    F        ?git commit --fixup %(commit)                                     # fixup作成
+bind main    K        ?git cherry-pick %(commit)                                        # cherry-pick
+
+# -------------------------------------------
+# status view (ステータス)
+# -------------------------------------------
+bind status  M        !git commit -am "%(prompt Enter commit message: )"                # add+commit
+bind status  +        !git commit --amend --allow-empty                                 # amend
+
+# -------------------------------------------
+# stage view (差分表示)
+# -------------------------------------------
+bind stage   C        !git commit                                                       # commit
+
+# -------------------------------------------
+# refs view (ブランチ一覧)
+# -------------------------------------------
+bind refs    S        @git switch %(branch)                                             # switch
+bind refs    C        @git switch -c "%(prompt Enter new branch name: )" %(branch)      # 新規ブランチ作成
+bind refs    R        ?git rebase %(branch)                                             # rebase
+bind refs    D        ?git branch -d %(branch)                                          # 削除
+

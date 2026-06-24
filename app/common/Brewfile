@@ -1,0 +1,38 @@
+# ==================================================
+# 共通 CLI ツール (macOS / Linux)
+# ==================================================
+
+# ファイル操作
+brew "eza"          # ls の代替
+brew "tree"         # ディレクトリ構造表示
+
+# 検索
+brew "fzf"          # ファジーファインダー
+brew "ripgrep"      # 高速 grep
+
+# Git 関連
+brew "git"
+brew "gh"           # GitHub CLI
+brew "ghq"          # リポジトリ管理
+brew "lazygit"      # Git TUI
+brew "tig"          # Git ビューア
+
+# 開発ツール
+brew "neovim"
+brew "jq"           # JSON パーサー
+brew "mkcert"       # ローカル証明書
+brew "tmux"
+brew "trunk"        # リンター/フォーマッター
+
+# メディア
+brew "exiftool"     # 画像メタデータ
+brew "ffmpeg"       # 動画処理
+
+# コンテナ
+brew "podman"
+
+# シェル
+brew "zsh"
+
+# AI
+brew "gemini-cli"

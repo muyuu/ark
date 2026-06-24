@@ -1,0 +1,12 @@
+# winget で導入する CLI ツール（user スコープ）。1 行 1 winget ID、# はコメント。
+# native Windows は WSL を母艦とするため CLI は最小限——toolchain と ghq だけに絞る。
+# eza / fzf / ripgrep などの便利 CLI は WSL/Linux 側で使い、ここには持ち込まない。
+
+# ランタイム / Git
+# git・mise は bootstrap.ps1 が toolchain として先に用意するが、宣言の単一ソースとして併記する。
+# deno は mise 経由で入れるため winget には載せない。
+Git.Git
+jdx.mise
+
+# リポジトリ管理
+x-motemen.ghq

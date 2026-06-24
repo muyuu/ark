@@ -1,0 +1,6 @@
+# brew bundle の前に信頼するサードパーティ tap。
+# 新しい Homebrew は untrusted な tap の formula/cask をロード拒否するため、
+# ここに列挙した tap を tap + trust してから bundle する。
+# 形式: <user>/<tap>（1 行 1 tap、# でコメント）
+
+albertlauncher/albert  # cask "albert"

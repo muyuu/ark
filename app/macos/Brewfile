@@ -1,0 +1,23 @@
+# ==================================================
+# macOS 固有（brew CLI + GUI cask）。共通 CLI は ../common/Brewfile を参照。
+# ==================================================
+
+# ビルド/システム依存（macOS は brew がネイティブ PM。Linux は ../linux/packages 側で管理）
+brew "cmake"        # ネイティブビルド (Rust の *-sys クレート等)
+
+# GUI アプリ
+cask "1password"
+cask "albert"
+cask "alfred"
+cask "coteditor"
+cask "firefox"
+cask "font-fira-code"
+cask "google-chrome"
+cask "google-japanese-ime"
+cask "iterm2"
+cask "jetbrains-toolbox"
+cask "mosaic"
+cask "notion"
+cask "tower"
+cask "zed"
+cask "visual-studio-code"

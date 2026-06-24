@@ -1,0 +1,21 @@
+# format: <key_name> <gpg_key_url> "<apt_source_line>"
+# <key_name> は、/etc/apt/keyrings/ と /etc/apt/sources.list.d/ で使われるファイル名になります。
+# <apt_source_line> 内の `__KEY_PATH__` はスクリプトによって自動的に正しいGPGキーのパスに置換されます。
+
+# Docker
+docker https://download.docker.com/linux/ubuntu/gpg "deb [arch=amd64 signed-by=__KEY_PATH__] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$UBUNTU_CODENAME") stable"
+
+# Microsoft (VSCode, Edge, etc.)
+microsoft https://packages.microsoft.com/keys/microsoft.asc "deb [arch=amd64 signed-by=__KEY_PATH__] https://packages.microsoft.com/repos/vscode stable main"
+
+# Mozilla (Firefox Beta/Dev)
+mozilla https://packages.mozilla.org/apt/repo-signing-key.gpg "deb [signed-by=__KEY_PATH__] https://packages.mozilla.org/apt mozilla main"
+
+# Albert
+albert https://download.opensuse.org/repositories/home:manuelschneid3r/xUbuntu_24.04/Release.key "deb [signed-by=__KEY_PATH__] http://download.opensuse.org/repositories/home:/manuelschneid3r/xUbuntu_24.04/ /"
+
+# 1Password
+1password https://downloads.1password.com/linux/keys/1password.asc "deb [arch=amd64 signed-by=__KEY_PATH__] https://downloads.1password.com/linux/debian/amd64 stable main"
+
+# brave
+brave-browser https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg "deb [arch=amd64 signed-by=__KEY_PATH__] https://brave-browser-apt-release.s3.brave.com stable main"

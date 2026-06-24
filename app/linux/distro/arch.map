@@ -1,0 +1,18 @@
+# ==================================================
+# Arch Linux パッケージ名マッピング
+# ==================================================
+# 形式: 論理名=実際のパッケージ名
+# 論理名が実際のパッケージ名と同じ場合は記載不要
+# ==================================================
+
+# 開発ツール
+vscode=visual-studio-code-bin
+build-essential=base-devel
+libclang-dev=clang
+pkg-config=pkgconf
+
+# フォント
+firacode=ttf-fira-code
+
+# ランチャー
+albert=albert-launcher

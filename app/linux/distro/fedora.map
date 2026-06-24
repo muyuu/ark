@@ -1,0 +1,15 @@
+# ==================================================
+# Fedora パッケージ名マッピング
+# ==================================================
+# 形式: 論理名=実際のパッケージ名
+# 論理名が実際のパッケージ名と同じ場合は記載不要
+# ==================================================
+
+# 開発ツール
+vscode=code
+build-essential=@development-tools
+libclang-dev=clang-devel
+pkg-config=pkgconf-pkg-config
+
+# フォント
+firacode=fira-code-fonts

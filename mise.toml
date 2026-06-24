@@ -6,6 +6,10 @@ rust = "latest"
 
 # --- セットアップ / 運用 ---------------------------------------------------
 
+[tasks.install]
+description = "app/ の宣言を適用してパッケージを導入する（brew /(Linux)システム層 /(Windows)winget）"
+run = "deno run -A engine/install.ts"
+
 [tasks.link-dotfiles]
 description = "config/ を $HOME へ symlink で展開する"
 run = "deno run -A engine/link-dotfiles.ts"

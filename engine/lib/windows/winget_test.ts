@@ -9,3 +9,8 @@ Deno.test("parseWingetfile: 1 行 1 ID を取り出しコメント/空行を無�
 Deno.test("parseWingetfile: 空内容なら空配列", () => {
   assertEquals(parseWingetfile(""), []);
 });
+
+Deno.test("parseWingetfile: CRLF 改行でもコメント行・行内コメントを除去する", () => {
+  const content = "# CLI\r\nGit.Git\r\nx-motemen.ghq  # ghq\r\n";
+  assertEquals(parseWingetfile(content), ["Git.Git", "x-motemen.ghq"]);
+});

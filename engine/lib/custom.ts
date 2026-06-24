@@ -17,7 +17,8 @@ const INSTALLERS: Record<string, () => Promise<void>> = {
 export function parseCustomList(content: string): string[] {
   return content
     .split("\n")
-    .map((line) => line.replace(/#.*$/, "").trim())
+    // `$` は付けない（CRLF の行末 \r でコメント除去が外れるため）
+    .map((line) => line.replace(/#.*/, "").trim())
     .filter((line) => line.length > 0);
 }
 

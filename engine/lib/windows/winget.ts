@@ -5,7 +5,8 @@ import { log } from "../logger.ts";
 export function parseWingetfile(content: string): string[] {
   return content
     .split("\n")
-    .map((line) => line.replace(/#.*$/, "").trim())
+    // `$` は付けない: CRLF 改行だと行末の \r が残り `#.*$` がマッチせずコメントを除去できないため。
+    .map((line) => line.replace(/#.*/, "").trim())
     .filter((line) => line.length > 0);
 }
 
@@ -27,6 +28,9 @@ export async function installWinget(ids: string[], scope: "user" | "machine"): P
     }
     log.info(`📦 ${id} をインストールしています...`);
     const scopeArgs = scope === "machine" ? ["--scope", "machine"] : [];
-    await $`winget install --id ${id} -e --accept-source-agreements --accept-package-agreements ${scopeArgs}`;
+    const result =
+      await $`winget install --id ${id} -e --accept-source-agreements --accept-package-agreements ${scopeArgs}`
+        .noThrow();
+    if (result.code !== 0) log.warning(`⚠️ ${id} の導入に失敗しました（スキップ）`);
   }
 }

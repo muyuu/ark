@@ -35,6 +35,9 @@ if (-not (Test-Path (Join-Path $arkDir ".git"))) {
     Write-Host "📦 ark リポジトリをクローンします..." -ForegroundColor Yellow
     New-Item -ItemType Directory -Path (Split-Path -Parent $arkDir) -Force | Out-Null
     git clone https://github.com/muyuu/ark.git $arkDir
+} else {
+    Write-Host "🔄 ark を最新へ更新します..." -ForegroundColor Yellow
+    git -C $arkDir pull --ff-only
 }
 
 Set-Location $arkDir

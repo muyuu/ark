@@ -112,8 +112,17 @@ export async function linkDotfiles(
 
   for (const { source, target } of plans) {
     await ensureRealDir(dirname(target));
-    await forceSymlink(source, target);
-    logger.info(`→ リンク: ${target}`);
+    try {
+      await forceSymlink(source, target);
+      logger.info(`→ リンク: ${target}`);
+    } catch (err) {
+      // Windows は symlink 作成に特権が要る（開発者モード or 管理者）。未付与なら中断せず警告して続ける。
+      if (Deno.build.os === "windows") {
+        logger.warning(`⚠️ symlink を作成できませんでした（開発者モード/管理者が必要）: ${target}`);
+        continue;
+      }
+      throw err;
+    }
   }
 
   return plans;

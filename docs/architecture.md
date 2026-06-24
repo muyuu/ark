@@ -38,19 +38,26 @@ winget/Store に載らない「野良」アプリは段階で扱う: ①宣言�
 
 ## dotfiles（config/）
 
-`config/` 配下を `$HOME` へ symlink で展開する。
+`config/` 配下を `$HOME` へ symlink で展開する。対象は 2 種類に分けて扱う。
 
-- トップレベルの隠しファイルは `$HOME` 直下へリンク。
-- `.config` / `.claude` は自身ではなく**中身を個別リンク**（cache や session 等のランタイム状態と混ざるため）。
-- 既存が実ファイルなら `<target>.bak.<epoch>` へ退避してからリンクする。
+- **単一所有のファイル**（`.zshrc` / `.gitconfig` / `.vimrc` / `.editorconfig` など）はそのファイルを
+  `$HOME` 直下へリンクする。overlay はこれらを置き換えず in-band で拡張する（`.zshrc` は `.zsh.d/*` を
+  glob source、`.gitconfig` は `includeIf`、`.claude/CLAUDE.md` は `@import`）。
+- **マージ対象のディレクトリ**（`.zsh.d` / `.config` / `.claude`）は自身ではなく**中身（子）を個別リンク**
+  する。`$HOME` 側を実ディレクトリに保ち、core と各 overlay が同じディレクトリへ自分のファイルを落とせる
+  ようにするため（`.config` / `.claude` はランタイム状態とも混ざるので個別リンクが必須）。
+- 同名の子が複数 layer にあれば後の layer（overlay）が勝つ。既存が実ファイルなら `<target>.bak.<epoch>` へ
+  退避してからリンクする。
 
 ## command（command/）
 
-自前 CLI は Rust の単一バイナリ。
+自前コマンドを 1 つ 1 サブディレクトリ（`command/<name>/`）に置く。各コマンドは独立した自己完結プロジェクトで、
+言語は問わない（`command/` 自体はただの入れ物）。
 
-- 配布は build-on-target: bootstrap で rust を用意し `cargo build --release` → `~/.local/bin` に配置。
-- mac/Linux は標準のリンカでビルド可。**Windows は既定でビルドをスキップ**し、必要なときだけ opt-in する
-  （rust(MSVC) のリンカ前提を避けるため）。
+- ビルドは build-on-target。bootstrap が `command/*` を種類に応じて個別にビルドし（例: `Cargo.toml` なら
+  `cargo build --release`）、生成物を `~/.local/bin` に置く。
+- Rust コマンドは mac/Linux は標準のリンカでビルド可。**Windows は既定でビルドをスキップ**し、必要なときだけ
+  opt-in する（rust(MSVC) のリンカ前提を避けるため）。
 
 ## audit
 

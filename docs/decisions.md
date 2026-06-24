@@ -2,11 +2,12 @@
 
 [architecture.md](./architecture.md) の構成がなぜそうなっているかを残す。構成そのものは architecture.md に置く。
 
-## engine = Deno + TS / command = Rust
+## engine は Deno + TS / 常用コマンドは Rust
 
-実行頻度とレイテンシ感度で言語を分ける。engine（install / update / audit）はたまに走るだけでレイテンシが
-効かず、型と標準ライブラリの厚い Deno + TS が書きやすい。command は対話で頻繁に叩き起動レイテンシが
-効くので、単一バイナリで速い Rust。
+実行頻度とレイテンシ感度で言語を選ぶ。engine（install / update / audit）はたまに走るだけでレイテンシが
+効かず、型と標準ライブラリの厚い Deno + TS が書きやすい。対話で頻繁に叩くコマンドは起動レイテンシが
+効くので、単一バイナリで速い Rust。`command/` 自体は言語非依存の入れ物で、用途に応じて他言語のコマンドも
+置ける（コマンドごとに独立した自己完結プロジェクトにし、`command/` を特定言語のプロジェクトルートにはしない）。
 
 ## command は build-on-target
 
@@ -21,10 +22,13 @@ opt-in する。
 自動判定でカバーできるため、手動で切り替える profile フラグは持たない。GUI 向けの宣言は GUI を持つ環境に
 だけ適用される。
 
-## dotfiles の `.config` / `.claude` は中身を個別リンクする
+## マージ対象のディレクトリは中身を個別リンクする
 
-これらのディレクトリには ark 管理外のランタイム状態（cache・session 等）が混ざる。ディレクトリ自体を symlink
-にすると管理外のファイルまで巻き込むため、中身のエントリを 1 つずつリンクする。
+`.zsh.d` / `.config` / `.claude` は core と overlay が同じ `$HOME` 配下のディレクトリへ各自のファイルを足す。
+ディレクトリ自体を symlink にすると 1 つの layer しか持てないため、中身を 1 つずつリンクして `$HOME` 側を実
+ディレクトリに保つ。これにより `.zshrc` の glob source や `.claude` の読み込みが全 layer のファイルをまとめて
+拾える。`.config` / `.claude` には ark 管理外のランタイム状態（cache・session 等）も混ざるので、この方式は
+管理外を巻き込まない意味でも必須。
 
 ## private な設定は overlay として別 repo に置く
 

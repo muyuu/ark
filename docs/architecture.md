@@ -75,8 +75,11 @@ private repo を重ねて、core に置けない設定（公開できない秘�
   url  = "git@github.com:<work-org>/ark-work.git"
   ```
 - overlay リポは `app/` と `config/` だけを持つ純コンテンツ。engine は core にしか無い。
-- 取得には GitHub 認証が要る。bootstrap が core 適用後に `gh auth login --git-protocol ssh --web` で認証を
-  確立し、SSH 鍵を登録してから overlay を clone する。clone 先は `~/.config/ark/overlays/<name>/`。
+- 取得は **ghq ツリー**（`<ghq.root>/github.com/<owner>/<repo>`）へ。ghq があれば `ghq get -u`、無ければ
+  ghq.root を解決して git で clone/pull する。普通のリポとして編集・pull できる。private repo の取得には
+  GitHub 認証が要り、bootstrap が core 適用後に `gh auth login --git-protocol ssh --web` で確立する。
+- core でも overlay でも変更があったら `ark update`（core を pull → overlay 取得 → link → install）で
+  最新化・再適用する。dotfiles は symlink なので pull で即反映、パッケージは install の再実行で反映される。
 - 合成順は core → overlay（配列順）。衝突は後勝ちだが、実態はほぼファイル追加。複雑なマージは避け、git と
   ツールの標準機構に寄せる:
 

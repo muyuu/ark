@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
-import { parseOverlays } from "./overlay.ts";
+import { join } from "@std/path";
+import { ghqPath, parseOverlays } from "./overlay.ts";
 
 Deno.test("parseOverlays: [[overlay]] 配列を順序を保って取り出す", () => {
   const toml = `
@@ -22,6 +23,23 @@ Deno.test("parseOverlays: 空内容は空配列", () => {
 });
 
 Deno.test("parseOverlays: name/url が欠けたエントリは除外する", () => {
-  const toml = '[[overlay]]\nname = "broken"\n';
-  assertEquals(parseOverlays(toml), []);
+  assertEquals(parseOverlays('[[overlay]]\nname = "broken"\n'), []);
+});
+
+Deno.test("ghqPath: SSH URL を ghq ローカルパスに変換する", () => {
+  assertEquals(
+    ghqPath("/home/me/workspaces", "git@github.com:muyuu/ark-personal.git"),
+    join("/home/me/workspaces", "github.com", "muyuu", "ark-personal"),
+  );
+});
+
+Deno.test("ghqPath: HTTPS URL（.git 無し・末尾スラッシュ）も変換する", () => {
+  assertEquals(
+    ghqPath("/root", "https://github.com/muyuu/ark-work/"),
+    join("/root", "github.com", "muyuu", "ark-work"),
+  );
+});
+
+Deno.test("ghqPath: 解釈できない URL は undefined", () => {
+  assertEquals(ghqPath("/root", "not-a-url"), undefined);
 });

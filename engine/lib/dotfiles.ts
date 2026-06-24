@@ -79,6 +79,22 @@ async function forceSymlink(source: string, target: string): Promise<void> {
 }
 
 /**
+ * リンク先の親ディレクトリを実ディレクトリとして用意する。
+ *
+ * マージ対象ディレクトリ（.zsh.d 等）は子を個別リンクするため、$HOME 側が**実ディレクトリ**である必要が
+ * ある。過去にディレクトリ単位の symlink（例: ~/.zsh.d → config/.zsh.d）が張られていると、子の
+ * lstat が symlink 越しにソース実体を指し、退避処理がソースを壊す。symlink なら剥がして実体化する。
+ */
+async function ensureRealDir(dir: string): Promise<void> {
+  try {
+    if ((await Deno.lstat(dir)).isSymlink) await Deno.remove(dir);
+  } catch (err) {
+    if (!(err instanceof Deno.errors.NotFound)) throw err;
+  }
+  await ensureDir(dir);
+}
+
+/**
  * configDir 内の設定を homeDir 配下へ symlink で展開する。
  * 既存の symlink は張り直すため再実行しても冪等。既存が実ファイル/ディレクトリの場合は
  * 破壊せず退避する（forceSymlink 参照）。算出したリンク計画を返す。
@@ -95,7 +111,7 @@ export async function linkDotfiles(
   const plans = planLinks(configDir, homeDir, listDirReal).filter(filter);
 
   for (const { source, target } of plans) {
-    await ensureDir(dirname(target));
+    await ensureRealDir(dirname(target));
     await forceSymlink(source, target);
     logger.info(`→ リンク: ${target}`);
   }

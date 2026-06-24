@@ -1,6 +1,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { type LinkPlan, planLinks } from "./dotfiles.ts";
+import { linkDotfiles, type LinkPlan, planLinks } from "./dotfiles.ts";
+import { Logger } from "./logger.ts";
 
 function fakeLister(tree: Record<string, string[]>) {
   return (dir: string): string[] => tree[dir] ?? [];
@@ -64,4 +65,27 @@ Deno.test("planLinks: 隠しファイル以外は対象外", () => {
   const plans = plan({ "/cfg": ["README.md", ".zshrc"] });
 
   assertEquals(plans, [{ source: "/cfg/.zshrc", target: "/home/.zshrc" }]);
+});
+
+Deno.test("linkDotfiles: 既存のディレクトリ symlink を実体化して子をリンクする（ソースを壊さない）", async () => {
+  const base = await Deno.makeTempDir();
+  try {
+    const config = join(base, "config");
+    const home = join(base, "home");
+    await Deno.mkdir(join(config, ".zsh.d"), { recursive: true });
+    await Deno.writeTextFile(join(config, ".zsh.d", "a.zsh"), "echo a");
+    await Deno.mkdir(home, { recursive: true });
+    // 旧来のディレクトリ symlink: ~/.zsh.d -> config/.zsh.d
+    await Deno.symlink(join(config, ".zsh.d"), join(home, ".zsh.d"));
+
+    await linkDotfiles(config, home, new Logger("none"));
+
+    // ソースは壊れていない
+    assertEquals(await Deno.readTextFile(join(config, ".zsh.d", "a.zsh")), "echo a");
+    // ~/.zsh.d は実ディレクトリ化され、子が symlink になっている
+    assertEquals((await Deno.lstat(join(home, ".zsh.d"))).isDirectory, true);
+    assertEquals((await Deno.lstat(join(home, ".zsh.d", "a.zsh"))).isSymlink, true);
+  } finally {
+    await Deno.remove(base, { recursive: true });
+  }
 });

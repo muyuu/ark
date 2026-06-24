@@ -1,11 +1,10 @@
 # winget で導入する GUI アプリ（machine スコープ・要管理者）。1 行 1 winget ID、# はコメント。
-# winget ID は実機未確認のものがある（要確認を明記）。
 
 # ブラウザ
 Brave.Brave
 
 # 開発
-Zed.Zed                     # 要確認
+ZedIndustries.Zed
 Microsoft.VisualStudioCode
 
 # メディア
@@ -14,8 +13,8 @@ VideoLAN.VLC
 # 画像
 GIMP.GIMP
 
-# ユーティリティ
-TimKosse.FileZilla.Client
-
 # セキュリティ・認証
 AgileBits.1Password
+
+# winget に無いため別手段で導入する物:
+#   FileZilla … winget に無し（公式サイトからインストーラ）

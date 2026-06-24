@@ -80,10 +80,10 @@ private repo を重ねて、core に置けない設定（公開できない秘�
 - 合成順は core → overlay（配列順）。衝突は後勝ちだが、実態はほぼファイル追加。複雑なマージは避け、git と
   ツールの標準機構に寄せる:
 
-  | 対象 | 仕組み |
-  | --- | --- |
-  | `.gitconfig` | core の値に `includeIf "gitdir:…"` で追加の設定を差す |
+  | 対象                | 仕組み                                                 |
+  | ------------------- | ------------------------------------------------------ |
+  | `.gitconfig`        | core の値に `includeIf "gitdir:…"` で追加の設定を差す  |
   | `.claude/CLAUDE.md` | 末尾の `@~/.claude/<name>.md`（あれば import）に逃がす |
-  | `.zsh.d/*.zsh` | glob source。overlay はファイルを置くだけ |
+  | `.zsh.d/*.zsh`      | glob source。overlay はファイルを置くだけ              |
 
 - 使い分けの例: 業務用 `ark-work`（職場 org に置けば同僚と共有可）、個人用 `ark-personal`。

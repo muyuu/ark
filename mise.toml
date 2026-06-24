@@ -1,0 +1,29 @@
+# ark のタスクランナ兼ツール定義。`mise tasks` で一覧、`mise run <task>` で実行する。
+
+[tools]
+deno = "latest"
+rust = "latest"
+
+# --- セットアップ / 運用 ---------------------------------------------------
+
+[tasks.link-dotfiles]
+description = "config/ を $HOME へ symlink で展開する"
+run = "deno run -A engine/link-dotfiles.ts"
+
+# --- 開発 ------------------------------------------------------------------
+
+[tasks.test]
+description = "テストを実行する"
+run = "deno test -A"
+
+[tasks.check]
+description = "型チェックする"
+run = "deno check engine/"
+
+[tasks.fmt]
+description = "フォーマットする"
+run = "deno fmt"
+
+[tasks.lint]
+description = "lint する"
+run = "deno lint"

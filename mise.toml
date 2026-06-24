@@ -31,6 +31,14 @@ run = [
 description = "SSH 鍵を生成し GitHub に登録する（gh の認証は事前に済ませておく）"
 run = "deno run -A engine/setup-github.ts"
 
+[tasks.security-scan]
+description = "ClamAV / rkhunter でセキュリティスキャンを実行する（Linux）"
+run = "deno run -A engine/security-scan.ts"
+
+[tasks.register-security-cron]
+description = "セキュリティスキャンを @reboot で実行するよう cron 登録する（Linux）"
+run = "deno run -A engine/register-security-cron.ts"
+
 [tasks.repo-to-ssh]
 description = "カレント git リポジトリの origin を HTTPS から SSH に切り替える"
 run = "deno run -A engine/repo-to-ssh.ts"

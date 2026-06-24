@@ -60,6 +60,24 @@ mise trust "$ARK_DIR/mise.toml" >/dev/null 2>&1 || true
 echo "🦕 toolchain（deno / rust）を用意しています..."
 mise install
 
+# private overlay を使う場合だけ、GitHub 認証と SSH 鍵を用意してから取得する。
+# overlays.toml が無ければ core だけで完結する。
+if [ -f "$HOME/.config/ark/overlays.toml" ]; then
+  command -v gh >/dev/null 2>&1 || brew install gh
+  if ! gh auth status >/dev/null 2>&1; then
+    if [ -e /dev/tty ]; then
+      echo "▶ GitHub にログインします（ブラウザ認証）..."
+      gh auth login --git-protocol ssh --web </dev/tty
+    else
+      echo "⚠ 非対話環境のため GitHub ログインをスキップします（overlay は取得できません）"
+    fi
+  fi
+  echo "🔑 SSH 鍵を用意しています..."
+  mise exec deno -- deno run -A "$ARK_DIR/engine/setup-github.ts"
+  echo "▶ overlay を取得しています..."
+  mise exec deno -- deno run -A "$ARK_DIR/engine/overlay-sync.ts"
+fi
+
 # 環境設定（PATH / dotfiles）→ パッケージ・自前コマンド導入まで同一実行で完了させる
 echo "▶ 環境を設定しています（PATH / dotfiles）..."
 mise exec deno -- deno run -A "$ARK_DIR/engine/bootstrap.ts"

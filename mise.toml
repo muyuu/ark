@@ -14,6 +14,14 @@ run = "deno run -A engine/install.ts"
 description = "overlays.toml に登録した private overlay を取得（clone / pull）する"
 run = "deno run -A engine/overlay-sync.ts"
 
+[tasks.github]
+description = "SSH 鍵を生成し GitHub に登録する（gh の認証は事前に済ませておく）"
+run = "deno run -A engine/setup-github.ts"
+
+[tasks.repo-to-ssh]
+description = "カレント git リポジトリの origin を HTTPS から SSH に切り替える"
+run = "deno run -A engine/repo-to-ssh.ts"
+
 [tasks.link-dotfiles]
 description = "config/ を $HOME へ symlink で展開する"
 run = "deno run -A engine/link-dotfiles.ts"

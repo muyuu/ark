@@ -25,6 +25,13 @@ async function isInstalled(id: string): Promise<boolean> {
  * winget で各 ID を導入する。導入済みはスキップする。
  * scope に "machine" を渡すと `--scope machine`（要管理者）で入れる（GUI 向け）。
  */
+async function wingetInstall(id: string, scopeArgs: string[]): Promise<boolean> {
+  const result =
+    await $`winget install --id ${id} -e --accept-source-agreements --accept-package-agreements ${scopeArgs}`
+      .noThrow();
+  return result.code === 0;
+}
+
 export async function installWinget(ids: string[], scope: "user" | "machine"): Promise<void> {
   for (const id of ids) {
     if (await isInstalled(id)) {
@@ -32,10 +39,13 @@ export async function installWinget(ids: string[], scope: "user" | "machine"): P
       continue;
     }
     log.info(`📦 ${id} をインストールしています...`);
-    const scopeArgs = scope === "machine" ? ["--scope", "machine"] : [];
-    const result =
-      await $`winget install --id ${id} -e --accept-source-agreements --accept-package-agreements ${scopeArgs}`
-        .noThrow();
-    if (result.code !== 0) log.warning(`⚠️ ${id} の導入に失敗しました（スキップ）`);
+
+    // GUI(machine) は machine スコープを優先しつつ、machine 非対応（Spotify 等）や非管理者時は
+    // user スコープにフォールバックする。CLI(user) はスコープ指定なし（winget の既定）。
+    const ok = scope === "machine"
+      ? (await wingetInstall(id, ["--scope", "machine"]) ||
+        await wingetInstall(id, ["--scope", "user"]))
+      : await wingetInstall(id, []);
+    if (!ok) log.warning(`⚠️ ${id} の導入に失敗しました（スキップ）`);
   }
 }

@@ -14,8 +14,10 @@
 	editor = vi
 	autocrlf = input
 	eol = lf
+# clone/fetch は HTTPS のまま・push だけ SSH に寄せる（insteadOf にすると Homebrew 等の
+# 匿名 HTTPS fetch まで SSH 化され、鍵未設定の環境で壊れるため pushInsteadOf を使う）
 [url "git@github.com:"]
-	insteadOf = https://github.com/
+	pushInsteadOf = https://github.com/
 [init]
 	defaultBranch = main
 # overlay が ~/.gitconfig.local を提供すれば業務メール等の上書きを取り込む（無ければ git が無視）

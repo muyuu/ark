@@ -60,7 +60,11 @@ mise trust "$ARK_DIR/mise.toml" >/dev/null 2>&1 || true
 echo "🦕 toolchain（deno / rust）を用意しています..."
 mise install
 
-# private overlay を使う場合だけ、GitHub 認証と SSH 鍵を用意してから取得する。
+# 先に core の dotfiles を展開する（~/.gitconfig の ghq.root 等を有効化してから overlay を取得するため）
+echo "▶ 環境を設定しています（PATH / dotfiles）..."
+mise exec deno -- deno run -A "$ARK_DIR/engine/bootstrap.ts"
+
+# private overlay を使う場合だけ、GitHub 認証と SSH 鍵を用意してから取得し、もう一度 dotfiles を展開する。
 # overlays.toml が無ければ core だけで完結する。
 if [ -f "$HOME/.config/ark/overlays.toml" ]; then
   command -v gh >/dev/null 2>&1 || brew install gh
@@ -76,11 +80,9 @@ if [ -f "$HOME/.config/ark/overlays.toml" ]; then
   mise exec deno -- deno run -A "$ARK_DIR/engine/setup-github.ts"
   echo "▶ overlay を取得しています..."
   mise exec deno -- deno run -A "$ARK_DIR/engine/overlay-sync.ts"
+  echo "▶ overlay の dotfiles を展開しています..."
+  mise exec deno -- deno run -A "$ARK_DIR/engine/bootstrap.ts"
 fi
-
-# 環境設定（PATH / dotfiles）→ パッケージ・自前コマンド導入まで同一実行で完了させる
-echo "▶ 環境を設定しています（PATH / dotfiles）..."
-mise exec deno -- deno run -A "$ARK_DIR/engine/bootstrap.ts"
 
 echo "▶ パッケージと自前コマンドを導入しています..."
 mise exec deno -- deno run -A "$ARK_DIR/engine/install.ts"

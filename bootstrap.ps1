@@ -47,7 +47,11 @@ mise trust "$arkDir\mise.toml" 2>$null
 Write-Host "🦕 deno を用意しています..." -ForegroundColor Cyan
 mise install deno
 
-# private overlay を使う場合だけ、GitHub 認証と SSH 鍵を用意してから取得する
+# 先に core の dotfiles を展開する（~/.gitconfig の ghq.root 等を有効化してから overlay を取得するため）
+Write-Host "▶ 環境を設定しています（dotfiles）..." -ForegroundColor Cyan
+mise exec deno -- deno run -A "$arkDir\engine\bootstrap.ts"
+
+# private overlay を使う場合だけ、GitHub 認証と SSH 鍵を用意してから取得し、もう一度 dotfiles を展開する
 $overlaysToml = Join-Path $env:USERPROFILE ".config\ark\overlays.toml"
 if (Test-Path $overlaysToml) {
     Install-IfMissing "gh" "GitHub.cli" "GitHub CLI"
@@ -60,11 +64,9 @@ if (Test-Path $overlaysToml) {
     mise exec deno -- deno run -A "$arkDir\engine\setup-github.ts"
     Write-Host "▶ overlay を取得しています..." -ForegroundColor Cyan
     mise exec deno -- deno run -A "$arkDir\engine\overlay-sync.ts"
+    Write-Host "▶ overlay の dotfiles を展開しています..." -ForegroundColor Cyan
+    mise exec deno -- deno run -A "$arkDir\engine\bootstrap.ts"
 }
-
-# 環境設定（dotfiles）→ パッケージ導入（winget）まで同一実行で完了させる
-Write-Host "▶ 環境を設定しています（dotfiles）..." -ForegroundColor Cyan
-mise exec deno -- deno run -A "$arkDir\engine\bootstrap.ts"
 
 Write-Host "▶ パッケージを導入しています..." -ForegroundColor Cyan
 mise exec deno -- deno run -A "$arkDir\engine\install.ts"

@@ -20,6 +20,14 @@ function existsSync(path: string): boolean {
   }
 }
 
+/**
+ * distro PM コマンドを sudo で実行する。apt は依存に MTA 等が入ると debconf の対話を出すため、
+ * DEBIAN_FRONTEND=noninteractive を渡して既定値で進める（dnf/pacman では無害な環境変数）。
+ */
+function sudoPm(argv: string[]): ReturnType<typeof $> {
+  return $`sudo DEBIAN_FRONTEND=noninteractive ${argv}`;
+}
+
 /** distro PM 用のパッケージ manifest（packages / gui）を論理名→実名に変換して導入する。 */
 async function installManifest(
   linuxDir: string,
@@ -35,7 +43,7 @@ async function installManifest(
   if (packages.length === 0) return;
 
   log.info(`${manifest} をインストールします...`);
-  await $`sudo ${installArgs(pm, packages)}`;
+  await sudoPm(installArgs(pm, packages));
 }
 
 /** 各 layer の app/linux ディレクトリ（存在するかは各処理側で判定）。 */
@@ -45,7 +53,7 @@ function linuxDirs(roots: string[]): string[] {
 
 async function runAll(commands: string[][]): Promise<void> {
   for (const argv of commands) {
-    await $`sudo ${argv}`;
+    await sudoPm(argv);
   }
 }
 

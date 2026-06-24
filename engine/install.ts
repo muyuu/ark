@@ -2,6 +2,7 @@ import { dirname, fromFileUrl, join } from "@std/path";
 import { $ } from "@david/dax";
 import { installBrew } from "./lib/brew.ts";
 import { buildCommands } from "./lib/command.ts";
+import { runCustomInstallers } from "./lib/custom.ts";
 import { installLinuxSystem } from "./lib/linux/install.ts";
 import { installWindows } from "./lib/windows/install.ts";
 import { layerRoots } from "./lib/overlay.ts";
@@ -30,6 +31,7 @@ if (import.meta.main) {
   } else {
     await installBrew(roots);
     if (Deno.build.os === "linux") await installLinuxSystem(roots);
+    await runCustomInstallers(roots, Deno.build.os === "darwin" ? "macos" : "linux");
     await buildCommands(repoRoot, home);
     await setupZsh(home);
   }

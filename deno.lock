@@ -9,13 +9,15 @@
     "jsr:@david/which@0.7": "0.7.0",
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/bytes@^1.0.6": "1.0.6",
+    "jsr:@std/collections@^1.1.3": "1.2.0",
     "jsr:@std/fmt@1": "1.0.10",
     "jsr:@std/fs@1": "1.0.24",
     "jsr:@std/internal@^1.0.12": "1.0.14",
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/io@0.225": "0.225.3",
     "jsr:@std/path@1": "1.1.5",
-    "jsr:@std/path@^1.1.5": "1.1.5"
+    "jsr:@std/path@^1.1.5": "1.1.5",
+    "jsr:@std/toml@1": "1.0.11"
   },
   "jsr": {
     "@david/console-static-text@0.3.4": {
@@ -57,6 +59,9 @@
     "@std/bytes@1.0.6": {
       "integrity": "f6ac6adbd8ccd99314045f5703e23af0a68d7f7e58364b47d2c7f408aeb5820a"
     },
+    "@std/collections@1.2.0": {
+      "integrity": "47627a21d3a13138b77fd0e4d790ba9d2e603c3510b686cde6b132fe9aa98a88"
+    },
     "@std/fmt@1.0.10": {
       "integrity": "90dfba288802ac6de82fb31d0917eb9e4450b9925b954d5e51fc29ac07419db5"
     },
@@ -81,6 +86,12 @@
       "dependencies": [
         "jsr:@std/internal@^1.0.14"
       ]
+    },
+    "@std/toml@1.0.11": {
+      "integrity": "e084988b872ca4bad6aedfb7350f6eeed0e8ba88e9ee5e1590621c5b5bb8f715",
+      "dependencies": [
+        "jsr:@std/collections"
+      ]
     }
   },
   "workspace": {
@@ -88,7 +99,8 @@
       "jsr:@david/dax@~0.48.3",
       "jsr:@std/assert@1",
       "jsr:@std/fs@1",
-      "jsr:@std/path@1"
+      "jsr:@std/path@1",
+      "jsr:@std/toml@1"
     ]
   }
 }

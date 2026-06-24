@@ -1,6 +1,7 @@
 import { dirname, fromFileUrl, join } from "@std/path";
 import { $ } from "@david/dax";
 import { installBrew } from "./lib/brew.ts";
+import { buildCommands } from "./lib/command.ts";
 import { installLinuxSystem } from "./lib/linux/install.ts";
 import { installWindows } from "./lib/windows/install.ts";
 import { setupZsh } from "./lib/zsh.ts";
@@ -26,6 +27,7 @@ if (import.meta.main) {
     }
     await installBrew(repoRoot);
     if (Deno.build.os === "linux") await installLinuxSystem(repoRoot);
+    await buildCommands(repoRoot, home);
     await setupZsh(home);
   }
 }

@@ -4,8 +4,19 @@ import { $ } from "@david/dax";
 import { log } from "../logger.ts";
 
 const DOWNLOAD_PAGE = "https://www.reaper.fm/download.php";
-const JPN_PATCH_URL =
-  "https://github.com/Phroneris/ReaperJPN-Phroneris/releases/download/v6.19.001/JPN_Phroneris.zip";
+
+// Phroneris 氏の日本語化パッチ。ライセンス未明記（全権利留保）かつ作者が公式配布先からの
+// 取得を求めているため同梱せず取得する。GitHub が落ちても入るよう公式ミラー（REAPER Stash）を続ける。
+const JPN_PATCH_URLS = [
+  "https://github.com/Phroneris/ReaperJPN-Phroneris/releases/download/v6.19.001/JPN_Phroneris.zip",
+  "http://stash.reaper.fm/v/27131/JPN_Phroneris.zip",
+];
+
+// Linux 版 REAPER(SWELL) のネイティブ UI は libSwell.colortheme の default_font_face を
+// fontconfig で 1 フェイスだけ解決して描画する（グリフ単位フォールバック無し）。既定の
+// Liberation Sans は日本語グリフを持たず日本語パックが豆腐になるため、CJK フォントに差し替える。
+const COLORTHEME_FILE = "libSwell.colortheme";
+const JA_FONT_FACE = "Noto Sans CJK JP";
 
 /** uname -m の値を REAPER 配布物の arch 文字列に変換する。未対応なら空文字。 */
 export function detectArchSuffix(machine: string): string {
@@ -39,6 +50,18 @@ export function latestVersionDigits(relativePath: string): string {
 /** `reaper --version` の出力から x.y を取り、ドットを除いた桁を返す。 */
 export function installedVersionDigits(versionOutput: string): string {
   return (versionOutput.match(/[0-9]+\.[0-9]+/)?.[0] ?? "").replaceAll(".", "");
+}
+
+/**
+ * libSwell.colortheme の default_font_face を指定フェイスに差し替えた内容を返す。
+ * 行が無ければ先頭に追加する。元から目的のフェイスなら content をそのまま返す。
+ */
+export function patchDefaultFontFace(content: string, face: string): string {
+  const line = `default_font_face ${face}`;
+  if (/^default_font_face .*$/m.test(content)) {
+    return content.replace(/^default_font_face .*$/m, line);
+  }
+  return `${line}\n${content}`;
 }
 
 async function archSuffixOrExit(): Promise<string> {
@@ -89,6 +112,18 @@ export async function checkReaper(): Promise<boolean> {
   return false;
 }
 
+/** ネイティブ UI フォントを CJK フェイスに差し替え、日本語パックの豆腐を防ぐ。 */
+async function patchColortheme(reaperDir: string): Promise<void> {
+  const file = join(reaperDir, COLORTHEME_FILE);
+  if (!(await $.path(file).exists())) {
+    log.warning(`${COLORTHEME_FILE} が見つかりません。UI フォント差し替えをスキップします`);
+    return;
+  }
+  const patched = patchDefaultFontFace(await Deno.readTextFile(file), JA_FONT_FACE);
+  await Deno.writeTextFile(file, patched);
+  log.info(`UI フォントを ${JA_FONT_FACE} に設定しました: ${COLORTHEME_FILE}`);
+}
+
 async function applyJapanesePatch(reaperDir: string, tmpdir: string): Promise<void> {
   const reaperExe = join(reaperDir, "reaper");
   if (!(await $.path(reaperExe).exists())) {
@@ -98,8 +133,16 @@ async function applyJapanesePatch(reaperDir: string, tmpdir: string): Promise<vo
 
   log.info(`日本語パッチを適用します: ${reaperDir}`);
   const patchZip = join(tmpdir, "jpn_patch.zip");
-  if ((await $`curl -fsSL ${JPN_PATCH_URL} -o ${patchZip}`.noThrow()).code !== 0) {
-    log.warning("日本語パッチのダウンロードに失敗しました。スキップします");
+  let downloaded = false;
+  for (const url of JPN_PATCH_URLS) {
+    if ((await $`curl -fsSL ${url} -o ${patchZip}`.noThrow()).code === 0) {
+      downloaded = true;
+      break;
+    }
+    log.warning(`日本語パッチの取得に失敗: ${url}`);
+  }
+  if (!downloaded) {
+    log.warning("日本語パッチを取得できませんでした。スキップします");
     return;
   }
 
@@ -119,6 +162,8 @@ async function applyJapanesePatch(reaperDir: string, tmpdir: string): Promise<vo
   await ensureDir(dest);
   await Deno.copyFile(langpack, join(dest, langpack.split("/").pop()!));
   log.info(`言語パックを配置しました: ${dest}`);
+
+  await patchColortheme(reaperDir);
 
   // 言語パックを REAPER に取り込む。Xvfb があればヘッドレスで、無ければ起動して手動取り込みを促す。
   if (await $.commandExists("xvfb-run")) {

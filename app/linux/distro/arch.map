@@ -13,6 +13,7 @@ pkg-config=pkgconf
 
 # フォント
 firacode=ttf-fira-code
+noto-cjk=noto-fonts-cjk
 
 # ランチャー
 albert=albert-launcher

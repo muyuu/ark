@@ -4,6 +4,7 @@ import {
   installedVersionDigits,
   latestVersionDigits,
   parseLatestRelativePath,
+  patchDefaultFontFace,
 } from "./reaper.ts";
 
 Deno.test("detectArchSuffix: uname -m を REAPER の arch 文字列に変換する", () => {
@@ -36,4 +37,30 @@ Deno.test("latestVersionDigits: 相対パスからバージョン桁を取り出
 Deno.test("installedVersionDigits: --version 出力から x.y を取りドットを除く", () => {
   assertEquals(installedVersionDigits("REAPER v7.21/linux-x86_64"), "721");
   assertEquals(installedVersionDigits("no version"), "");
+});
+
+Deno.test("patchDefaultFontFace: 既存の default_font_face 行を差し替え、他行は保持する", () => {
+  const before = [
+    "default_font_face Liberation Sans",
+    "default_font_size 13",
+    "menubar_font_size 12",
+  ].join("\n");
+  const after = [
+    "default_font_face Noto Sans CJK JP",
+    "default_font_size 13",
+    "menubar_font_size 12",
+  ].join("\n");
+  assertEquals(patchDefaultFontFace(before, "Noto Sans CJK JP"), after);
+});
+
+Deno.test("patchDefaultFontFace: 既に目的のフェイスなら変更しない", () => {
+  const content = "default_font_face Noto Sans CJK JP\ndefault_font_size 13";
+  assertEquals(patchDefaultFontFace(content, "Noto Sans CJK JP"), content);
+});
+
+Deno.test("patchDefaultFontFace: 行が無ければ先頭に追加する", () => {
+  assertEquals(
+    patchDefaultFontFace("default_font_size 13", "Noto Sans CJK JP"),
+    "default_font_face Noto Sans CJK JP\ndefault_font_size 13",
+  );
 });

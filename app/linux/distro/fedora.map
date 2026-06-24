@@ -13,3 +13,4 @@ pkg-config=pkgconf-pkg-config
 
 # フォント
 firacode=fira-code-fonts
+noto-cjk=google-noto-sans-cjk-fonts

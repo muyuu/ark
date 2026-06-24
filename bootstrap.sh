@@ -23,6 +23,21 @@ if [ -f /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
   sudo update-locale LANG=ja_JP.UTF-8
 fi
 
+# fresh な Linux（WSL 含む）は git / curl が未導入のことがある。clone・以降の取得の前に用意する。
+if [ "$(uname)" = "Linux" ]; then
+  for tool in git curl; do
+    command -v "$tool" >/dev/null 2>&1 && continue
+    echo "📦 $tool をインストールします..."
+    if command -v apt-get >/dev/null 2>&1; then
+      sudo apt-get update && sudo apt-get install -y "$tool"
+    elif command -v dnf >/dev/null 2>&1; then
+      sudo dnf install -y "$tool"
+    elif command -v pacman >/dev/null 2>&1; then
+      sudo pacman -S --noconfirm "$tool"
+    fi
+  done
+fi
+
 # ark を HTTPS でクローン（SSH 鍵が未登録でも可）。取得済みなら何もしない
 if [ ! -d "$ARK_DIR/.git" ]; then
   echo "📦 ark リポジトリをクローンしています..."

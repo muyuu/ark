@@ -1,5 +1,5 @@
 import { $ } from "@david/dax";
-import { log } from "../logger.ts";
+import { log } from "../../logger.ts";
 
 // Android Studio Linux 版のダウンロード URL。新バージョンが出たら更新が必要。
 const ANDROID_STUDIO_URL =

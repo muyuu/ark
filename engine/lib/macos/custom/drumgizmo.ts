@@ -1,7 +1,7 @@
 import { basename, join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { $ } from "@david/dax";
-import { log } from "../logger.ts";
+import { log } from "../../logger.ts";
 
 // DrumGizmo（OSS ドラム音源）の macOS 個別インストーラ。Homebrew / winget に無いため、reaper.ts と同型の
 // detect / install / update をベンダー配布物（reaper.fm に相当する drumgizmo.org の releases）から行う。

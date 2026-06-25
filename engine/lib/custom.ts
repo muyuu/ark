@@ -1,15 +1,17 @@
 import { join } from "@std/path";
 import { readTextOr } from "./fs.ts";
 import { log } from "./logger.ts";
-import { installReaper } from "./linux/reaper.ts";
-import { installAndroidStudio } from "./linux/android-studio.ts";
-import { installDrumGizmo } from "./macos/drumgizmo.ts";
+import { installReaper } from "./linux/custom/reaper.ts";
+import { installAndroidStudio } from "./linux/custom/android-studio.ts";
+import { installZed } from "./linux/custom/zed.ts";
+import { installDrumGizmo } from "./macos/custom/drumgizmo.ts";
 
 // 野良アプリ（package manager に無い物）の個別インストーラ。名前 → 実装で引く。
 // 実装は core engine が持ち（公開しても問題ない）、各 layer が app/<os>/custom で名前を宣言して opt-in する。
 const INSTALLERS: Record<string, () => Promise<void>> = {
   reaper: installReaper, // Linux（macOS は brew cask）
   "android-studio": installAndroidStudio, // Linux
+  zed: installZed, // Linux（Arch は PM / 他 distro は公式スクリプト）
   drumgizmo: installDrumGizmo, // macOS（Linux は distro パッケージ）
 };
 

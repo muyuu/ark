@@ -39,14 +39,15 @@ fn update_workspace(env: &Env) -> Result<()> {
     Ok(())
 }
 
-/// Add a worktree folder to the running Zed window (`zed --add`). Best-effort:
-/// when the Zed CLI isn't on PATH we skip and let the caller fall back to a
-/// `wt code` hint. Returns whether Zed was invoked.
+/// Open the worktree as a Zed project, reusing the existing window so windows
+/// don't pile up (`zed -e`). Best-effort: when the Zed CLI isn't on PATH we
+/// skip and let the caller fall back to a `wt code` hint. Returns whether Zed
+/// was invoked.
 fn open_in_zed(wt_path: &str) -> bool {
     if !proc::has_command("zed") {
         return false;
     }
-    proc::run("zed", ["--add", wt_path])
+    proc::run("zed", ["-e", wt_path])
 }
 
 /// Apply the symlink whitelist (`__wt_apply_symlinks`).
@@ -167,7 +168,7 @@ pub fn create(env: &Env, branch: &str, name: &str) -> Result<()> {
     println!("✅ worktree 作成: {wt_path}");
     println!("   cd {wt_path}");
     if open_in_zed(&wt_path) {
-        println!("   (Zed に folder を追加した)");
+        println!("   (Zed で開いた)");
     } else {
         println!("   wt code  # VSCode multi-root workspace を開く");
     }

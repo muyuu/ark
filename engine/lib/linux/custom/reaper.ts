@@ -1,7 +1,7 @@
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { $ } from "@david/dax";
-import { log } from "../logger.ts";
+import { log } from "../../logger.ts";
 
 const DOWNLOAD_PAGE = "https://www.reaper.fm/download.php";
 

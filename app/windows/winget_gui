@@ -16,5 +16,8 @@ GIMP.GIMP
 # セキュリティ・認証
 AgileBits.1Password
 
+# ユーティリティ
+AltSnap.AltSnap
+
 # winget に無いため別手段で導入する物:
 #   FileZilla … winget に無し（公式サイトからインストーラ）

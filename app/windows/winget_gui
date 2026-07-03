@@ -10,8 +10,12 @@ Microsoft.VisualStudioCode
 # メディア
 VideoLAN.VLC
 
+# 音楽・譜面
+Musescore.Musescore
+
 # 画像
 GIMP.GIMP
+DuongDieuPhap.ImageGlass
 
 # セキュリティ・認証
 AgileBits.1Password

@@ -57,3 +57,12 @@ overlay の `includeIf` で業務リポ配下にスコープして差す。
 ## secret は repo に入れない
 
 秘匿ファイルが必要な場合は、実体を repo の外で管理し symlink で渡す。repo には実体を置かない。
+
+## 箱の作業のホスト可視化は host←box の一方向 fetch
+
+箱（sandbox）は named volume の独立 clone なので、ホストの git（Tower 等）からは見えない。ホストに worktree を
+rw bind すれば見えるが、箱内コードが worktree の `.git`（hooks 等）を書き換えられ、次のホスト git 実行時に走る
+（container→host のコード実行）ため隔離が崩れる。そこで方向を host←box に固定し、箱を read-only な git remote
+（`ext::` + `docker exec … git upload-pack`）として `git fetch` するだけにした（`wt sync`）。起動主体はホストで箱は
+pack を渡すのみ、fetch クライアント側でリモートのフックは走らないので、隔離を保ったまま可視化できる。取り込み先は
+remote-tracking の `refs/remotes/box-<name>/*` にしてローカルブランチを壊さない。

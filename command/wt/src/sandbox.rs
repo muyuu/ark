@@ -239,6 +239,66 @@ pub fn enter(env: &Env, name: &str) -> Result<()> {
     }
 }
 
+/// `wt sync <name>` — 箱の作業をホストの git（Tower 等）から見えるようにする。
+///
+/// 方向は host←box の一方向。箱を read-only な git remote `box-<name>` として登録し
+/// `git fetch` するだけ。ホストが `docker exec … git upload-pack` を起動し、箱は
+/// pack を渡すだけなので、箱からホストへの書き込みは発生しない（rw bind と違い隔離を保つ）。
+/// 取り込み先は `refs/remotes/box-<name>/*`（remote-tracking なのでローカルブランチを壊さない）。
+pub fn sync(env: &Env, name: &str) -> Result<()> {
+    if name.is_empty() {
+        bail!("wt: 'wt sync <name>'");
+    }
+    if !docker_running() {
+        bail!("wt: docker が動いていない（Docker を起動して再実行）");
+    }
+    let box_name = format!("wtbox-{}-{}", env.repo, name);
+    if !container_exists(&box_name) {
+        bail!("wt: 箱 {box_name} が無い（wt sandbox {name} で作成）");
+    }
+    proc::run_quiet("docker", ["start", box_name.as_str()]);
+
+    let wsdir = format!("/workspaces/{}", env.repo);
+    let remote = format!("box-{name}");
+    // ext:: transport: git がこの文字列を空白区切りで起動し、pack プロトコルを喋らせる。
+    // fetch は常に upload-pack を使うのでサービス名は固定でよい。
+    let url = format!("ext::docker exec -i {box_name} git upload-pack {wsdir}");
+
+    // remote を冪等に用意（無ければ add・あれば url 更新）。add の既定 refspec が
+    // +refs/heads/*:refs/remotes/box-<name>/* なので、箱の全ブランチが取り込まれる。
+    let has_remote =
+        proc::capture_in(&env.main, "git", ["remote", "get-url", remote.as_str()]).is_some();
+    let remote_ok = if has_remote {
+        proc::run_quiet(
+            "git",
+            ["-C", env.main.as_str(), "remote", "set-url", remote.as_str(), url.as_str()],
+        )
+    } else {
+        proc::run_quiet(
+            "git",
+            ["-C", env.main.as_str(), "remote", "add", remote.as_str(), url.as_str()],
+        )
+    };
+    if !remote_ok {
+        bail!("wt: remote {remote} の設定に失敗");
+    }
+
+    println!("▶ 箱から fetch（host←box・read-only）...");
+    if !proc::run("git", ["-C", env.main.as_str(), "fetch", remote.as_str()]) {
+        bail!("wt: fetch 失敗（git の protocol.ext.allow が never になっていないか確認）");
+    }
+    println!("✅ 同期完了: {remote}/<branch> として取り込み（Tower で見える）");
+    Ok(())
+}
+
+/// 箱削除時に対応する同期 remote（`box-<name>`）も掃除する。無ければ何もしない。
+fn remove_sync_remote(env: &Env, name: &str) {
+    proc::run_quiet(
+        "git",
+        ["-C", env.main.as_str(), "remote", "remove", &format!("box-{name}")],
+    );
+}
+
 /// `__wt_list_boxes`.
 pub fn list_boxes(env: &Env) {
     if !proc::has_command("docker") {
@@ -335,9 +395,13 @@ pub fn sweep_boxes(env: &Env) {
         println!("箱は中断");
         return;
     }
+    let prefix = format!("wtbox-{}-", env.repo);
     for b in &rm_boxes {
         proc::run_quiet("docker", ["rm", "-f", b.as_str()]);
         proc::run_quiet("docker", ["volume", "rm", b.as_str()]);
+        if let Some(name) = b.strip_prefix(&prefix) {
+            remove_sync_remote(env, name);
+        }
         println!("  🗑 箱 {b}");
     }
 }
@@ -349,6 +413,7 @@ pub fn rm_box(env: &Env, name: &str) -> bool {
     if proc::has_command("docker") && container_exists(&box_name) {
         proc::run_quiet("docker", ["rm", "-f", box_name.as_str()]);
         proc::run_quiet("docker", ["volume", "rm", box_name.as_str()]);
+        remove_sync_remote(env, name);
         println!("🗑 箱 {box_name} を削除");
         true
     } else {

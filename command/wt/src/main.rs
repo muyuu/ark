@@ -35,6 +35,7 @@ fn main() -> ExitCode {
         "new" => with_env(|e| cmd_new(&e, &args, SandboxMode::Auto)),
         "sandbox" => with_env(|e| cmd_new(&e, &args, SandboxMode::On)),
         "enter" => with_env(|e| sandbox::enter(&e, args.first().map(|s| s.as_str()).unwrap_or(""))),
+        "sync" => with_env(|e| sandbox::sync(&e, args.first().map(|s| s.as_str()).unwrap_or(""))),
         "list" | "ls" => with_env(|e| {
             worktree::list(&e);
             Ok(())
@@ -154,6 +155,7 @@ fn print_help() {
   wt new pr <number>     PR の branch を fetch して worktree/箱 作成
   wt sandbox <branch>    隔離箱を作成（devcontainer + named volume へ独立 clone）
   wt enter <name>        箱に入って claude を起動
+  wt sync <name>         箱の作業をホストへ取り込む（host←box の read-only fetch・Tower で見える）
   wt list                worktree / 箱 一覧（PR ステータス付き）
   wt sweep               merged/closed PR の worktree・箱 を一括削除（確認あり）
   wt rm <name>           特定 worktree/箱 を削除

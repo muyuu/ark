@@ -37,6 +37,19 @@ async function isInstalled(id: string): Promise<boolean> {
   return byName.includes(name);
 }
 
+/**
+ * winget 管理下の全パッケージを最新版へ更新する。導入済みパッケージのバージョンアップはこれが担う
+ * （install はスキップ判定するだけで版を上げないため）。
+ *
+ * 対象は winget 管理下の全アプリで、ark の宣言リストには限らない（brew upgrade -f と同じ広さ）。
+ * バージョン不明のパッケージも対象にするため --include-unknown を付ける。個々の更新失敗で全体を
+ * 止めないよう noThrow で流す。machine スコープのアプリは非管理者だと更新できず、その分はスキップされる。
+ */
+export async function upgradeAllWinget(): Promise<void> {
+  await $`winget upgrade --all --include-unknown --accept-source-agreements --accept-package-agreements`
+    .noThrow();
+}
+
 async function wingetInstall(id: string, scope: "machine" | "user"): Promise<boolean> {
   const result =
     await $`winget install --id ${id} -e --accept-source-agreements --accept-package-agreements --scope ${scope}`

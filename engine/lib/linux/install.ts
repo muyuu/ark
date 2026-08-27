@@ -3,7 +3,7 @@ import { $ } from "@david/dax";
 import { log } from "../logger.ts";
 import { readTextOr } from "../fs.ts";
 import { detectDistro, type PackageManager } from "./distro.ts";
-import { mapPackageName, parsePackageMap, parseSystemPackages } from "./packages.ts";
+import { mapPackageNames, parsePackageMap, parseSystemPackages } from "./packages.ts";
 import { cleanupCommands, installArgs, updateCommands } from "./package-manager.ts";
 import { registerGpgKeys } from "./gpg-keys.ts";
 import { setupFlatpak } from "./flatpak.ts";
@@ -39,7 +39,7 @@ async function installManifest(
   if (!content) return;
 
   const map = parsePackageMap(await readTextOr(join(linuxDir, "distro", `${distroName}.map`), ""));
-  const packages = parseSystemPackages(content).map((name) => mapPackageName(map, name));
+  const packages = parseSystemPackages(content).flatMap((name) => mapPackageNames(map, name));
   if (packages.length === 0) return;
 
   log.info(`${manifest} をインストールします...`);

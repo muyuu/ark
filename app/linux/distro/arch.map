@@ -17,3 +17,6 @@ noto-cjk=noto-fonts-cjk
 
 # ランチャー
 albert=albert-launcher
+
+# 日本語入力
+fcitx5-frontends=fcitx5-gtk fcitx5-qt

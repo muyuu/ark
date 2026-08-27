@@ -14,19 +14,26 @@ export function parseSystemPackages(content: string): string[] {
 }
 
 /**
- * distro の .map（`論理名=実名`）を Map に解釈する。コメント行・空行は無視する。
+ * distro の .map（`論理名=実名...`）を Map に解釈する。コメント行・空行は無視する。
+ *
+ * 右辺は空白区切りで複数書ける。1 つの論理パッケージが distro によって複数パッケージに
+ * 分かれる場合（例: Debian の fcitx5-frontend-all = Arch の fcitx5-gtk + fcitx5-qt）に使う。
  */
-export function parsePackageMap(content: string): Map<string, string> {
-  const map = new Map<string, string>();
+export function parsePackageMap(content: string): Map<string, string[]> {
+  const map = new Map<string, string[]>();
   for (const line of contentLines(content)) {
     const eq = line.indexOf("=");
     if (eq <= 0) continue;
-    map.set(line.slice(0, eq).trim(), line.slice(eq + 1).trim());
+
+    const names = line.slice(eq + 1).trim().split(/\s+/).filter((name) => name.length > 0);
+    if (names.length === 0) continue;
+
+    map.set(line.slice(0, eq).trim(), names);
   }
   return map;
 }
 
-/** 論理名を実パッケージ名に変換する。マップに無ければ論理名をそのまま返す。 */
-export function mapPackageName(map: Map<string, string>, logicalName: string): string {
-  return map.get(logicalName) ?? logicalName;
+/** 論理名を実パッケージ名に変換する。マップに無ければ論理名そのものを 1 件返す。 */
+export function mapPackageNames(map: Map<string, string[]>, logicalName: string): string[] {
+  return map.get(logicalName) ?? [logicalName];
 }

@@ -5,5 +5,8 @@
 # 実体は engine/lib/linux/。GUI を持つ環境にだけ適用する（WSL / headless では実行しない）。
 # ==================================================
 
+# ターミナル
+ghostty # Arch・Fedora=PM / Debian 系は公式リポジトリに入るまで community PPA
+
 # エディタ
 zed     # IDE はホスト連携が要るので flatpak でなくネイティブ。Arch=PM / Debian・Fedora=公式 install スクリプト

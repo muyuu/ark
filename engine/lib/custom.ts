@@ -4,6 +4,7 @@ import { log } from "./logger.ts";
 import { installReaper } from "./linux/custom/reaper.ts";
 import { installAndroidStudio } from "./linux/custom/android-studio.ts";
 import { installZed } from "./linux/custom/zed.ts";
+import { installGhostty } from "./linux/custom/ghostty.ts";
 import { installDrumGizmo } from "./macos/custom/drumgizmo.ts";
 
 // 野良アプリ（package manager に無い物）の個別インストーラ。名前 → 実装で引く。
@@ -12,6 +13,7 @@ const INSTALLERS: Record<string, () => Promise<void>> = {
   reaper: installReaper, // Linux（macOS は brew cask）
   "android-studio": installAndroidStudio, // Linux
   zed: installZed, // Linux（Arch は PM / 他 distro は公式スクリプト）
+  ghostty: installGhostty, // Linux（公式パッケージが無い Debian 系のみ community PPA）
   drumgizmo: installDrumGizmo, // macOS（Linux は distro パッケージ）
 };
 

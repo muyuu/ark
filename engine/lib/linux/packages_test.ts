@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { mapPackageName, parsePackageMap, parseSystemPackages } from "./packages.ts";
+import { mapPackageNames, parsePackageMap, parseSystemPackages } from "./packages.ts";
 
 Deno.test("parseSystemPackages: 論理名を行ごとに取り出す", () => {
   assertEquals(parseSystemPackages("dolphin\nkonsole\n"), ["dolphin", "konsole"]);
@@ -17,18 +17,28 @@ Deno.test("parseSystemPackages: 行内コメントを除き先頭トークンを
 
 Deno.test("parsePackageMap: 論理名=実名 を Map に解釈する", () => {
   const map = parsePackageMap("vscode=code\nfiracode=fonts-firacode\n");
-  assertEquals(map.get("vscode"), "code");
-  assertEquals(map.get("firacode"), "fonts-firacode");
+  assertEquals(map.get("vscode"), ["code"]);
+  assertEquals(map.get("firacode"), ["fonts-firacode"]);
+});
+
+Deno.test("parsePackageMap: 空白区切りで複数の実名に展開できる", () => {
+  const map = parsePackageMap("fcitx5-frontends=fcitx5-gtk fcitx5-qt\n");
+  assertEquals(map.get("fcitx5-frontends"), ["fcitx5-gtk", "fcitx5-qt"]);
 });
 
 Deno.test("parsePackageMap: コメント行・空行を無視する", () => {
   const map = parsePackageMap("# 開発ツール\n\nvscode=code\n");
   assertEquals(map.size, 1);
-  assertEquals(map.get("vscode"), "code");
+  assertEquals(map.get("vscode"), ["code"]);
 });
 
-Deno.test("mapPackageName: マップにあれば実名、なければ論理名のまま", () => {
+Deno.test("mapPackageNames: マップにあれば実名、なければ論理名のまま", () => {
   const map = parsePackageMap("vscode=code\n");
-  assertEquals(mapPackageName(map, "vscode"), "code");
-  assertEquals(mapPackageName(map, "konsole"), "konsole");
+  assertEquals(mapPackageNames(map, "vscode"), ["code"]);
+  assertEquals(mapPackageNames(map, "konsole"), ["konsole"]);
+});
+
+Deno.test("mapPackageNames: 1 論理名を複数の実名へ展開する", () => {
+  const map = parsePackageMap("fcitx5-frontends=fcitx5-gtk fcitx5-qt\n");
+  assertEquals(mapPackageNames(map, "fcitx5-frontends"), ["fcitx5-gtk", "fcitx5-qt"]);
 });

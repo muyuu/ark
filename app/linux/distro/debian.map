@@ -11,3 +11,7 @@ vscode=code
 # フォント
 firacode=fonts-firacode
 noto-cjk=fonts-noto-cjk
+
+# 日本語入力
+fcitx5-frontends=fcitx5-frontend-all
+fcitx5-configtool=fcitx5-config-qt

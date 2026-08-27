@@ -14,3 +14,6 @@ pkg-config=pkgconf-pkg-config
 # フォント
 firacode=fira-code-fonts
 noto-cjk=google-noto-sans-cjk-fonts
+
+# 日本語入力
+fcitx5-frontends=fcitx5-gtk fcitx5-qt

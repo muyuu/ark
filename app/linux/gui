@@ -21,3 +21,11 @@ vscode
 
 # スクリーンショット
 flameshot
+
+# 日本語入力
+# GTK4 アプリ（Ghostty 等）へ入力するには GTK4 の IM モジュールが要る。fcitx4 系には存在せず、
+# GTK4 は XIM フォールバックも持たないため、fcitx5 でないと GTK4 アプリで一切入力できない。
+fcitx5            # IM フレームワーク
+fcitx5-mozc       # かな漢字変換エンジン
+fcitx5-frontends  # GTK / Qt の IM モジュール一式
+fcitx5-configtool # 設定 GUI

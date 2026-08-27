@@ -10,6 +10,7 @@ dolphin
 albert
 
 # ターミナル
+ghostty         # apt は Ubuntu 25.10 / Debian trixie 以降に収録
 konsole
 gnome-terminal
 

@@ -66,3 +66,18 @@ rw bind すれば見えるが、箱内コードが worktree の `.git`（hooks �
 （`ext::` + `docker exec … git upload-pack`）として `git fetch` するだけにした（`wt sync`）。起動主体はホストで箱は
 pack を渡すのみ、fetch クライアント側でリモートのフックは走らないので、隔離を保ったまま可視化できる。取り込み先は
 remote-tracking の `refs/remotes/box-<name>/*` にしてローカルブランチを壊さない。
+
+## SSH 鍵はマシンの資産で、GitHub 登録はその利用者
+
+鍵は「GitHub 用に作るもの」ではなく、マシンが持つ資産。GitHub はその登録先の 1 つにすぎない。生成を登録の
+内側に置くと、鍵を GitHub 以外へ向けたいときに登録経路を通ることになり、1 マシンに複数の鍵を持つ選択もできない。
+そこで鍵の生成と ssh config への固定（`ssh.ts`）を、GitHub への登録（`github.ts`）から切り離し、後者が前者を
+使う向きにした。何本持つか（1 マシン 1 本か用途別に複数か）は宣言で決める。自動で GitHub に登録するのは既定鍵
+だけ——用途別の鍵は登録先アカウントの選択を伴い、認証中のアカウントへ黙って登録すると誤った紐付けになるため。
+
+## bootstrap に要る鍵は machine-local、用途別の鍵は overlay
+
+overlay は SSH で引くので、その鍵の宣言を overlay の中に置くことはできない（「core は認証なしで bootstrap
+できる」と同じにわとりたまご）。bootstrap に要る鍵は overlay の外——既定か machine-local——で持つ。bootstrap に
+要らない用途別の鍵は overlay に宣言できる。マシンの用途はどの overlay を入れたかとほぼ同義なので、業務用の鍵は
+業務用 overlay に置くのが重複がない。

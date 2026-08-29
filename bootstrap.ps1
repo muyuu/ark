@@ -63,10 +63,12 @@ if (Test-Path $overlaysToml) {
         Write-Host "▶ GitHub にログインします（ブラウザ認証）..." -ForegroundColor Cyan
         gh auth login --git-protocol ssh --web
     }
-    Write-Host "🔑 SSH 鍵を用意しています..." -ForegroundColor Cyan
+    Write-Host "🔑 github.com 用の SSH 鍵を用意して登録しています..." -ForegroundColor Cyan
     mise exec deno -- deno run -A "$arkDir\engine\setup-github.ts"
     Write-Host "▶ overlay を取得しています..." -ForegroundColor Cyan
     mise exec deno -- deno run -A "$arkDir\engine\overlay-sync.ts"
+    Write-Host "🔑 宣言された SSH 鍵を揃えています..." -ForegroundColor Cyan
+    mise exec deno -- deno run -A "$arkDir\engine\ssh-keys.ts"
     Write-Host "▶ overlay の dotfiles を展開しています..." -ForegroundColor Cyan
     mise exec deno -- deno run -A "$arkDir\engine\bootstrap.ts"
 }

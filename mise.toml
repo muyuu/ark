@@ -23,13 +23,18 @@ description = "core / overlay を最新化し dotfiles とパッケージを再�
 run = [
   "git pull --ff-only",
   "deno run -A engine/overlay-sync.ts",
+  "deno run -A engine/ssh-keys.ts",
   "deno run -A engine/link-dotfiles.ts",
   "deno run -A engine/install.ts",
 ]
 
 [tasks.github]
-description = "SSH 鍵を生成し GitHub に登録する（gh の認証は事前に済ませておく）"
+description = "このマシンの github.com 用の鍵を用意し GitHub に登録する（gh の認証は事前に済ませておく）"
 run = "deno run -A engine/setup-github.ts"
+
+[tasks.ssh-keys]
+description = "宣言された SSH 鍵をこのマシンに揃える（生成と ssh config への固定。GitHub 登録はしない）"
+run = "deno run -A engine/ssh-keys.ts"
 
 [tasks.security-scan]
 description = "ClamAV / rkhunter でセキュリティスキャンを実行する（Linux）"

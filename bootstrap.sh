@@ -94,10 +94,12 @@ if [ -f "$HOME/.config/ark/overlays.toml" ]; then
       echo "⚠ 非対話環境のため GitHub ログインをスキップします（overlay は取得できません）"
     fi
   fi
-  echo "🔑 SSH 鍵を用意しています..."
+  echo "🔑 github.com 用の SSH 鍵を用意して登録しています..."
   mise exec deno -- deno run -A "$ARK_DIR/engine/setup-github.ts"
   echo "▶ overlay を取得しています..."
   mise exec deno -- deno run -A "$ARK_DIR/engine/overlay-sync.ts"
+  echo "🔑 宣言された SSH 鍵を揃えています..."
+  mise exec deno -- deno run -A "$ARK_DIR/engine/ssh-keys.ts"
   echo "▶ overlay の dotfiles を展開しています..."
   mise exec deno -- deno run -A "$ARK_DIR/engine/bootstrap.ts"
 fi

@@ -28,6 +28,23 @@ ark は macOS / Linux（WSL）/ native Windows それぞれのマシン構成を
 - **対話プロンプトは `< /dev/tty` から読む**（`curl … | bash` は stdin がパイプで対話入力を奪うため）。
   tty が無い環境（CI 等）は非対話フォールバックへ落ちる。
 
+## SSH 鍵
+
+鍵はマシンの資産として持ち、GitHub はその登録先の 1 つとして扱う。用意（`ark ssh-keys`）と GitHub への
+登録（`ark github`）は別のコマンドに分かれる。
+
+- 宣言は `[[key]]` の配列。`name` が鍵の識別子でファイル名を導き（`default` だけは ssh のデフォルト ID
+  `~/.ssh/id_ed25519`、それ以外は `~/.ssh/id_ed25519_<name>`）、`host` を書くとその Host へ鍵を固定する
+  ブロックを `~/.ssh/config` に追記する（`hostname` でエイリアスから実ホストへ向けられる）。
+- 合成順は 既定 → machine-local（`~/.config/ark/ssh-keys.toml`）→ overlay（`<overlay>/ssh-keys.toml`・
+  登録順）。同名は後勝ち。
+- 宣言が無いマシンは既定の 1 本（`default` を github.com へ）だけを持つ。1 マシン 1 本か用途別に複数かは
+  宣言で決める。
+- **bootstrap に要る鍵（github.com 用）は overlay に宣言できない。** overlay 自体を SSH で引くのに要るため、
+  machine-local か既定のどちらかで持つ。
+- GitHub への自動登録は既定鍵だけ。用途別の鍵は登録先アカウントの選択を伴うので、`gh` の認証を切り替えた
+  うえで明示的に登録する。
+
 ## パッケージ（app/）
 
 宣言は OS 別の manifest に置く（`common` は macOS/Linux 共通）。導入対象は OS と環境（GUI の有無など）で

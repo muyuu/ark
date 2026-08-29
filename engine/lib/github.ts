@@ -1,75 +1,44 @@
-import { join } from "@std/path";
-import { ensureDir } from "@std/fs";
 import { $ } from "@david/dax";
 import { log } from "./logger.ts";
+import {
+  ensureHostBlock,
+  ensureKey,
+  type KeyDecl,
+  readPublicKey,
+  resolveKeys,
+  type SshKey,
+} from "./ssh.ts";
 
-/** github.com 用の SSH config ブロックを返す（先頭の空行込み。既存 config への追記を想定）。 */
-export function githubSshConfig(keyfile: string): string {
-  return [
-    "",
-    "Host github.com",
-    "    HostName github.com",
-    "    User git",
-    `    IdentityFile ${keyfile}`,
-    "    IdentitiesOnly yes",
-    "",
-  ].join("\n");
-}
-
-/** SSH config 内に github.com の Host 設定が既にあるか。 */
-export function hasGithubHost(config: string): boolean {
-  return config.includes("Host github.com");
-}
+/**
+ * github.com へ登録する既定の鍵。bootstrap は overlay を SSH で引くので、宣言が無いマシンでも
+ * この 1 本だけは用意される。
+ */
+export const GITHUB_KEY_DECL: KeyDecl = { name: "default", host: "github.com", user: "git" };
 
 /** 公開鍵文字列から鍵本体（2 番目のフィールド）を取り出す。GitHub 登録済み判定に使う。 */
 export function publicKeyToken(pubkey: string): string {
   return pubkey.trim().split(/\s+/)[1] ?? "";
 }
 
-async function readFileOr(path: string, fallback: string): Promise<string> {
-  try {
-    return await Deno.readTextFile(path);
-  } catch (err) {
-    if (err instanceof Deno.errors.NotFound) return fallback;
-    throw err;
-  }
-}
-
-/** ~/.ssh/config に github.com 用の設定が無ければ追記する。既にあれば何もしない（冪等）。 */
-export async function ensureSshConfig(homeDir: string, keyfile: string): Promise<void> {
-  const sshDir = join(homeDir, ".ssh");
-  const configPath = join(sshDir, "config");
-
-  const existing = await readFileOr(configPath, "");
-  if (hasGithubHost(existing)) return;
-
-  await ensureDir(sshDir);
-  await Deno.writeTextFile(configPath, existing + githubSshConfig(keyfile));
-}
-
-/** 鍵ファイルが無ければ ed25519 鍵を生成する。 */
-async function ensureSshKey(keyfile: string, email: string): Promise<void> {
-  if (await $.path(keyfile).exists()) {
-    log.success(`✅ SSH 鍵は既に存在します: ${keyfile}`);
-    return;
-  }
-  log.info(`🔑 SSH 鍵を生成しています: ${keyfile}`);
-  await $`ssh-keygen -t ed25519 -C ${email} -f ${keyfile} -N ${""}`;
+/** `gh ssh-key list` の出力にこの公開鍵が含まれるか。鍵が読めなければ登録済みとみなさない。 */
+export function isKeyRegistered(listOutput: string, pubkey: string): boolean {
+  const token = publicKeyToken(pubkey);
+  return token !== "" && listOutput.includes(token);
 }
 
 /**
- * 公開鍵を GitHub に登録する。gh が未認証なら警告して何もしない（対話認証は shell 側の
- * `gh auth login --web` で先に済ませる前提）。登録済みなら冪等にスキップする。
+ * 公開鍵を GitHub に登録する。gh が未認証なら警告して何もしない（対話認証は呼び出し側で
+ * 済ませる前提）。登録済みなら冪等にスキップする。
  */
-async function registerKeyOnGithub(keyfile: string): Promise<void> {
+export async function registerKeyOnGithub(key: SshKey): Promise<void> {
   if (!(await $.commandExists("gh"))) {
     log.warning("⚠️ GitHub CLI がインストールされていません");
     return;
   }
 
-  const pubfile = `${keyfile}.pub`;
-  const token = publicKeyToken(await readFileOr(pubfile, ""));
-  if (!token) {
+  const pubfile = `${key.file}.pub`;
+  const pubkey = await readPublicKey(key);
+  if (!pubkey.trim()) {
     log.warning(`⚠️ SSH 公開鍵が見つかりません: ${pubfile}`);
     return;
   }
@@ -79,42 +48,37 @@ async function registerKeyOnGithub(keyfile: string): Promise<void> {
     return;
   }
 
-  const registered = await $`gh ssh-key list`.text();
-  if (registered.includes(token)) {
-    log.success("✅ この SSH 鍵は既に GitHub に登録されています");
+  if (isKeyRegistered(await $`gh ssh-key list`.text(), pubkey)) {
+    log.success(`✅ この SSH 鍵は既に GitHub に登録されています: ${pubfile}`);
     return;
   }
+
   const title = `${Deno.hostname()}-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}`;
   await $`gh ssh-key add ${pubfile} --title ${title}`;
   log.success(`✅ SSH 鍵を GitHub に登録しました: ${pubfile}`);
 }
 
-/**
- * GitHub 用の SSH 鍵を用意して登録する（非対話）。鍵生成・~/.ssh/config 追記・GitHub 登録まで行う。
- * メールは git の user.email を使い、鍵名は id_ed25519 固定。GitHub の認証自体は shell 側で済ませておく。
- */
-export async function setupGithubSsh(homeDir: string): Promise<void> {
-  // 既に github.com の SSH 設定があるマシンには触らない（鍵を二重に作って登録しないため）。
-  const configPath = join(homeDir, ".ssh", "config");
-  if (hasGithubHost(await readFileOr(configPath, ""))) {
-    log.success(
-      "✅ ~/.ssh/config に github.com 設定済みのため SSH 鍵のセットアップをスキップします",
-    );
-    return;
-  }
+/** 既定鍵を解決する。 */
+export function githubKey(homeDir: string): SshKey {
+  return resolveKeys(homeDir, [GITHUB_KEY_DECL])[0];
+}
 
+/**
+ * 渡された鍵を github.com 用に用意する（鍵の生成・ssh config への追記・GitHub への登録）。
+ * それぞれ独立に冪等なので、鍵だけある／config だけあるマシンでも足りない分を埋める。
+ */
+export async function setupGithubSsh(homeDir: string, key: SshKey = githubKey(homeDir)) {
   const email = (await $`git config --global user.email`.noThrow().text()).trim() ||
     "ark@localhost";
-  const keyfile = join(homeDir, ".ssh", "id_ed25519");
 
-  await ensureSshKey(keyfile, email);
-  await ensureSshConfig(homeDir, keyfile);
-  await registerKeyOnGithub(keyfile);
+  await ensureKey(key, email);
+  await ensureHostBlock(homeDir, key);
+  await registerKeyOnGithub(key);
 }
 
 /**
  * private overlay を引けるよう GitHub 認証と SSH 鍵を整える。gh が未認証ならブラウザ認証
- * （対話。`ark overlay add` を対話シェルから叩く前提）を行い、続けて SSH 鍵を用意・登録する。
+ * （対話。`ark overlay add` を対話シェルから叩く前提）を行い、続けて既定鍵を用意・登録する。
  */
 export async function ensureGithubSshReady(homeDir: string): Promise<void> {
   if (!(await $.commandExists("gh"))) {

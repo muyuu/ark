@@ -96,6 +96,32 @@
       "Bash(mise tasks:*)",
       "Bash(mise where:*)",
       "Bash(mise env)"
+    ],
+    "deny": [
+      "Read(//**/.env)",
+      "Read(//**/.env.*)",
+      "Read(//**/*.pem)",
+      "Read(//**/*.key)",
+      "Read(//**/*.p12)",
+      "Read(//**/*.pfx)",
+      "Read(//**/*.keystore)",
+      "Read(//**/*.jks)",
+      "Read(//**/id_rsa*)",
+      "Read(//**/id_ecdsa*)",
+      "Read(//**/id_ed25519*)",
+      "Read(//**/.ssh/**)",
+      "Read(//**/.gnupg/**)",
+      "Read(//**/.aws/**)",
+      "Read(//**/.config/gcloud/**)",
+      "Read(//**/secrets/**)",
+      "Read(//**/credentials)",
+      "Read(//**/credentials.json)",
+      "Read(//**/.credentials.json)",
+      "Read(//**/service-account*.json)",
+      "Read(//**/.netrc)",
+      "Read(//**/.npmrc)",
+      "Read(//**/.pypirc)",
+      "Read(//**/.mise.local.toml)"
     ]
   },
   "hooks": {

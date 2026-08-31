@@ -1,4 +1,4 @@
-# 唯一の Windows shell 入口。winget で toolchain（git / mise / deno）を用意し、以降のロジックは
+﻿# 唯一の Windows shell 入口。winget で toolchain（git / mise / deno）を用意し、以降のロジックは
 # engine/ の TypeScript（Deno）へ委譲する。mac/Linux の bootstrap.sh と同型・薄い範囲。
 #
 # 使い方:

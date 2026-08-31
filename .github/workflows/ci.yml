@@ -1,0 +1,81 @@
+# PR ごとに静的チェックとテストを回す。マージしてよいかを人の記憶に頼らないための土台。
+#
+# action は供給網攻撃を避けるため commit SHA で固定する（タグは同じ名前のまま中身を差し替えられる）。
+# 末尾のコメントが人間向けのバージョン表記。更新時は SHA とコメントの両方を差し替えること。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同じブランチで走っている古い実行は捨てる（push を重ねたときの無駄を省く）。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    # パスの区切り文字の扱いが OS で変わるため Linux と Windows の両方で回す
+    # （macOS は Linux と同じ POSIX パスなので省く）。
+    name: engine (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.x
+          # deno.lock を鍵に依存キャッシュ（DENO_DIR）を復元する。
+          cache: true
+      - run: deno fmt --check
+      - run: deno lint
+      - run: deno check engine/
+      - run: deno test -A
+
+  wt:
+    # command/wt は unix API を使うので Linux のみ（native Windows はビルド対象外）。
+    name: wt
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: command/wt
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: command/wt
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  scripts:
+    # bootstrap は fresh なマシンでしか走らないので、壊れていても普段は気づけない。lint で拾う。
+    name: scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # shellcheck は ubuntu ランナーに同梱されているのでインストール不要。
+      - run: shellcheck -S style bootstrap.sh
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
+            Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          }
+          # 除外する規則:
+          #   PSAvoidUsingWriteHost                     進捗表示が目的なので意図どおり
+          #   PSUseShouldProcessForStateChangingFunctions  スクリプト内のヘルパで、公開する cmdlet ではない
+          $found = Invoke-ScriptAnalyzer -Path bootstrap.ps1 -Severity Warning,Error `
+            -ExcludeRule PSAvoidUsingWriteHost, PSUseShouldProcessForStateChangingFunctions
+          if ($found) { $found | Format-List; exit 1 }

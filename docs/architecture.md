@@ -72,18 +72,19 @@ WSL・native Windows・サーバの位置づけ:
 ## パッケージ（app/）
 
 宣言は OS 別の manifest に置く（`common` は macOS/Linux 共通）。導入対象は OS と環境で決まり、環境は
-自動判定する（手動フラグは持たない）。層は 3 つで、下の層ほど適用先が狭い:
+自動判定する（手動フラグは持たない）。最小層はどこでも適用し、そのうえで用途別の層を 1 つ重ねる（サーバ層と開発層は排他）:
 
-| 層             | manifest                                                     | 適用先                     |
-| -------------- | ------------------------------------------------------------ | -------------------------- |
-| 最小           | `packages` / `custom.toml` / `winget_cli`                    | すべての環境（サーバ含む） |
-| 開発層         | `common`(Brewfile) / `dev` / `custom-dev.toml`               | デスクトップと WSL         |
-| デスクトップ層 | `desktop` / `flatpak` / `custom-desktop.toml` / `winget_gui` | デスクトップ環境のみ       |
+| 層             | manifest                                                     | 適用先                  |
+| -------------- | ------------------------------------------------------------ | ----------------------- |
+| 最小           | `packages` / `custom.toml` / `winget_cli`                    | すべての環境            |
+| サーバ層       | `server` / `custom-server.toml`                              | 表示先の無い Linux のみ |
+| 開発層         | `common`(Brewfile) / `dev` / `custom-dev.toml`               | デスクトップと WSL      |
+| デスクトップ層 | `desktop` / `flatpak` / `custom-desktop.toml` / `winget_gui` | デスクトップ環境のみ    |
 
 - **デスクトップ環境**: macOS・Windows なら常に真。Linux は WSL でなく、かつ表示先（`DISPLAY` /
   `WAYLAND_DISPLAY`）がある。
-- **開発機**: デスクトップ、または WSL。表示先の無い Linux（VPS・コンテナ）は「人が作業する場所」では
-  なく「サービスを載せる箱」なので外れる。
+- **開発機**: デスクトップ、または WSL。
+- **サーバ**: 開発機の裏返し（表示先の無い Linux）。「人が作業する場所」ではなく「サービスを載せる箱」。
 
 ### package manager に無いアプリ（custom）
 

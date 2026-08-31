@@ -70,16 +70,16 @@ async function runAll(commands: string[][]): Promise<void> {
  *
  * Homebrew / CLI ツール（Brewfile）は OS によらず installBrew が所有するためここでは扱わない。
  *
- * 開発層（dev）はデスクトップと WSL に、デスクトップ層（desktop / Flatpak）はデスクトップにだけ入れる。
- * 表示先の無い Linux（VPS 等）には最小層（packages）しか入らない。判定は呼び出し側が行う。
+ * 最小層（packages）はどこでも入れ、そのうえでサーバ層（server）／開発層（dev）／デスクトップ層
+ * （desktop / Flatpak）を用途に応じて重ねる。サーバ層と開発層は排他。判定は呼び出し側が行う。
  */
 export async function installLinuxSystem(
   roots: string[],
-  tiers: { desktop: boolean; dev: boolean },
+  tiers: { desktop: boolean; dev: boolean; server: boolean },
 ): Promise<void> {
   const dirs = linuxDirs(roots);
 
-  if (!tiers.dev) log.info("開発機ではないため、開発層とデスクトップ層はスキップします");
+  if (tiers.server) log.info("サーバを検出: 開発層とデスクトップ層はスキップします");
   else if (!tiers.desktop) log.info("デスクトップ環境ではないため、デスクトップ層はスキップします");
 
   const distro = detectDistro(existsSync);
@@ -97,6 +97,12 @@ export async function installLinuxSystem(
 
   for (const dir of dirs) {
     await installManifest(dir, distro.name, distro.packageManager, "packages");
+  }
+
+  if (tiers.server) {
+    for (const dir of dirs) {
+      await installManifest(dir, distro.name, distro.packageManager, "server");
+    }
   }
 
   if (tiers.dev) {

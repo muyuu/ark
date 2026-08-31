@@ -1,12 +1,13 @@
 # ========================================
 # エイリアス設定
 # ========================================
+# 標準コマンドを別実装で置き換えるものと、外部コマンドに依存する関数は
+# `hash <cmd>` で守る。無いマシン（サーバ等）で壊れないようにするため。
 
 alias relogin='exec $SHELL -l'
 
 # replace command line tool
-alias ds='dust'
-alias grep='rg'
+hash dust 2>/dev/null && alias ds='dust'
 
 if hash eza 2>/dev/null; then
     alias eza='eza --group-directories-first --git'
@@ -48,48 +49,52 @@ function chpwd() { [[ -o interactive ]] && ls -lah }
 function mkcd(){mkdir -p $1 && cd $1}
 
 # ローカルリポジトリに移動
-alias g='cd $(ghq root)/$(ghq list | fzf)'
+if hash ghq 2>/dev/null && hash fzf 2>/dev/null; then
+    alias g='cd $(ghq root)/$(ghq list | fzf)'
+fi
 
-# fzfでコマンド履歴を使う
-function fzf-history-selection() {
-    local cmd=$(fc -ln 1 | awk '{lines[NR]=$0} END{for(i=NR;i>=1;i--)if(!a[lines[i]]++)print lines[i]}' | fzf --height 40% --reverse)
-    if [ -n "$cmd" ]; then
-        BUFFER="$cmd"
-        CURSOR=$#BUFFER
-    fi
-    zle reset-prompt
-}
+if hash fzf 2>/dev/null; then
+    # fzfでコマンド履歴を使う
+    function fzf-history-selection() {
+        local cmd=$(fc -ln 1 | awk '{lines[NR]=$0} END{for(i=NR;i>=1;i--)if(!a[lines[i]]++)print lines[i]}' | fzf --height 40% --reverse)
+        if [ -n "$cmd" ]; then
+            BUFFER="$cmd"
+            CURSOR=$#BUFFER
+        fi
+        zle reset-prompt
+    }
 
-zle -N fzf-history-selection
-bindkey '^r' fzf-history-selection
+    zle -N fzf-history-selection
+    bindkey '^r' fzf-history-selection
 
-# ========================================
-# fzf でサスペンドしたジョブを選択して fg
-# ========================================
-# 複数の C-z したジョブがある時に fg %1 等と番号指定するのが面倒なので
-# fzf で選択できるようにする
-# ジョブが1つなら通常の fg、複数なら fzf で選択
-function fg() {
-  local job_count=$(jobs | wc -l | tr -d ' ')
+    # ========================================
+    # fzf でサスペンドしたジョブを選択して fg
+    # ========================================
+    # 複数の C-z したジョブがある時に fg %1 等と番号指定するのが面倒なので
+    # fzf で選択できるようにする
+    # ジョブが1つなら通常の fg、複数なら fzf で選択
+    function fg() {
+      local job_count=$(jobs | wc -l | tr -d ' ')
 
-  # ジョブがなければ何もしない
-  if [[ "$job_count" -eq 0 ]]; then
-    echo "fg: no current job"
-    return 1
-  fi
+      # ジョブがなければ何もしない
+      if [[ "$job_count" -eq 0 ]]; then
+        echo "fg: no current job"
+        return 1
+      fi
 
-  # ジョブが1つなら通常の fg
-  if [[ "$job_count" -eq 1 ]]; then
-    builtin fg
-    return
-  fi
+      # ジョブが1つなら通常の fg
+      if [[ "$job_count" -eq 1 ]]; then
+        builtin fg
+        return
+      fi
 
-  # 複数ジョブがある場合は fzf で選択
-  # jobs の出力例: [1]  + suspended  nvim
-  local selected=$(jobs | fzf --height 40% --reverse --header "Select job to foreground")
-  if [[ -n "$selected" ]]; then
-    # [1] の数字部分を抽出
-    local job_num=$(echo "$selected" | sed 's/^\[\([0-9]*\)\].*/\1/')
-    builtin fg %$job_num
-  fi
-}
+      # 複数ジョブがある場合は fzf で選択
+      # jobs の出力例: [1]  + suspended  nvim
+      local selected=$(jobs | fzf --height 40% --reverse --header "Select job to foreground")
+      if [[ -n "$selected" ]]; then
+        # [1] の数字部分を抽出
+        local job_num=$(echo "$selected" | sed 's/^\[\([0-9]*\)\].*/\1/')
+        builtin fg %$job_num
+      fi
+    }
+fi

@@ -3,7 +3,7 @@ import { $ } from "@david/dax";
 import { installBrew } from "./lib/brew.ts";
 import { buildCommands } from "./lib/command.ts";
 import { runCustomInstallers } from "./lib/custom.ts";
-import { isDesktop, isDev } from "./lib/desktop.ts";
+import { isDesktop, isDev, isServer } from "./lib/desktop.ts";
 import { installLinuxSystem } from "./lib/linux/install.ts";
 import { installWindows } from "./lib/windows/install.ts";
 import { layerRoots } from "./lib/overlay.ts";
@@ -15,9 +15,10 @@ import { log } from "./lib/logger.ts";
  * 宣言（app/）を適用してパッケージを導入する。core と取得済み overlay を合成順に処理し、OS で導入経路を
  * 振り分ける: Windows は winget、それ以外は Homebrew（+ Linux は distro のシステム層）と自前コマンド・zsh 設定。
  *
- * 層は 3 つ。最小（`packages` / `custom.toml`）はどこでも、開発層（`dev` / `custom-dev.toml`）は
- * デスクトップと WSL に、デスクトップ層（`desktop` / `flatpak` / `custom-desktop.toml`）はデスクトップに
- * だけ適用する。表示先の無い Linux（VPS 等）には最小層しか入らない。
+ * 最小層（`packages` / `custom.toml`）はどこでも適用し、そのうえで用途別の層を重ねる:
+ * サーバ層（`server`）は表示先の無い Linux に、開発層（`dev` / `custom-dev.toml`）はデスクトップと
+ * WSL に、デスクトップ層（`desktop` / `flatpak` / `custom-desktop.toml`）はデスクトップにだけ適用する。
+ * サーバ層と開発層は排他。
  */
 if (import.meta.main) {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..");
@@ -31,6 +32,7 @@ if (import.meta.main) {
   warnRenamedManifests(roots);
   const desktop = isDesktop();
   const dev = isDev();
+  const server = isServer();
 
   log.info("🔧 mise のツールをインストールしています...");
   await $`mise install`;
@@ -39,10 +41,11 @@ if (import.meta.main) {
     await installWindows(roots);
   } else {
     await installBrew(roots);
-    if (Deno.build.os === "linux") await installLinuxSystem(roots, { desktop, dev });
+    if (Deno.build.os === "linux") await installLinuxSystem(roots, { desktop, dev, server });
 
     const os = Deno.build.os === "darwin" ? "macos" : "linux";
     await runCustomInstallers(roots, os, "custom.toml");
+    if (server) await runCustomInstallers(roots, os, "custom-server.toml");
     if (dev) await runCustomInstallers(roots, os, "custom-dev.toml");
     if (desktop) await runCustomInstallers(roots, os, "custom-desktop.toml");
 

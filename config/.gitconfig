@@ -7,7 +7,8 @@
 	delete-merged-branches = !git branch --merged | grep -v \\* | xargs -I % git branch -d %
 [filter "lfs"]
 	process = git-lfs filter-process
-	required = true
+	# git-lfs を宣言していないので、無い環境で git 操作ごと失敗しないようにする
+	required = false
 	clean = git-lfs clean -- %f
 	smudge = git-lfs smudge -- %f
 [core]

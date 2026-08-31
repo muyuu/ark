@@ -5,6 +5,9 @@
 # ビルド/システム依存（macOS は brew がネイティブ PM。Linux は ../linux/packages 側で管理）
 brew "cmake"        # ネイティブビルド (Rust の *-sys クレート等)
 
+# 通知（Claude Code の Notification hook が使う）
+brew "terminal-notifier"
+
 # GUI アプリ
 cask "1password"
 cask "albert"

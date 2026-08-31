@@ -6,14 +6,17 @@ worktree を作成したら、そのプロジェクトの初期化手順（CLAUD
 
 ### wt コマンド
 
-git worktree のライフサイクル管理は `wt` zsh 関数（`dotfiles/.zsh.d/wt.zsh`）で行う。ユーザーが worktree 作成・整理を希望した場合は以下を案内する：
+git worktree と隔離箱（sandbox）のライフサイクル管理は `wt` コマンドで行う。実体は Rust 製の CLI で、ark の `command/wt/` をビルドしたものが `~/.local/bin/wt` に置かれる。ユーザーが worktree 作成・整理を希望した場合は以下を案内する：
 
 | コマンド | 用途 |
 |---|---|
-| `wt new <branch>` | 既存ブランチ（local / origin）から worktree 作成 |
+| `wt new <branch>` | 既存ブランチ（local / origin）から worktree 作成（`.devcontainer` があれば箱モード） |
 | `wt new pr <番号>` | PR の branch を fetch して worktree 作成 |
-| `wt list` | worktree 一覧（PR ステータス付き） |
-| `wt sweep` | merged / closed PR の worktree を一括削除（確認あり） |
+| `wt sandbox <branch>` | 隔離箱を明示的に作成 |
+| `wt enter <name>` | 箱に入って claude を起動 |
+| `wt sync <name>` | 箱の作業をホストへ read-only で取り込む |
+| `wt list` | worktree / 箱 一覧（PR ステータス付き） |
+| `wt sweep` | merged / closed PR の worktree・箱を一括削除（確認あり） |
 | `wt rm <name>` | 個別削除 |
 | `wt code` | VSCode の multi-root workspace を開く |
 

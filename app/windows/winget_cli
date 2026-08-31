@@ -10,3 +10,7 @@ jdx.mise
 
 # リポジトリ管理
 x-motemen.ghq
+
+# Rust（native Windows でも Rust のビルド・実行はする）
+# リンカに MSVC が要る。VS Build Tools の導入は別途（#39）。
+Rustlang.Rustup

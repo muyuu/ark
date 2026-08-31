@@ -45,12 +45,38 @@ ark は macOS / Linux（WSL）/ native Windows それぞれのマシン構成を
 - GitHub への自動登録は既定鍵だけ。用途別の鍵は登録先アカウントの選択を伴うので、`gh` の認証を切り替えた
   うえで明示的に登録する。
 
+## サポート範囲
+
+どの環境で何を面倒みるかを先に決めてある。空欄を作らないのが目的で、「やらない」も宣言のうち。
+
+|                | パッケージ       | dotfiles                                 | 自前コマンド     | デスクトップ層 |
+| -------------- | ---------------- | ---------------------------------------- | ---------------- | -------------- |
+| macOS          | brew             | 全部                                     | ビルドする       | 入れる         |
+| Linux（GUI）   | brew + distro PM | 全部                                     | ビルドする       | 入れる         |
+| WSL            | brew + distro PM | 全部                                     | ビルドする       | **入れない**   |
+| native Windows | winget           | `.gitconfig` / `.config/tig` / `.claude` | **ビルドしない** | 入れる         |
+
+WSL と native Windows の位置づけ:
+
+- **WSL は開発環境**（web と Rust）。WSLg で GUI は動くが、ブラウザ・ファイルマネージャ・IME と
+  いったデスクトップの道具はホストの Windows 側にあるので入れない。開発に要るエディタ（Zed）だけは
+  デスクトップ層ではなく常時の層に置く。
+- **native Windows でも Rust のビルド・実行はする**（母艦は WSL）。CLI は toolchain と ghq に絞り、
+  便利 CLI は WSL 側で使う。dotfiles は native Windows で実際に読まれる物だけを展開する。
+- ark 自身の `command/`（Rust）は unix API を使うため native Windows ではビルドしない。
+
 ## パッケージ（app/）
 
-宣言は OS 別の manifest に置く（`common` は macOS/Linux 共通）。導入対象は OS と環境（GUI の有無など）で
-決まり、GUI / デスクトップ向けの宣言は GUI を持つ環境にだけ適用される（環境は自動判定で、手動フラグは
-持たない）。具体的には CLI/システム層（`common` / `packages`）は常に、GUI 層（`gui` / `flatpak` /
-`custom`）は GUI 環境のみ。headless（WSL 等）では GUI 層をスキップする。
+宣言は OS 別の manifest に置く（`common` は macOS/Linux 共通）。導入対象は OS と環境で決まり、環境は
+自動判定する（手動フラグは持たない）。層は 2 つ:
+
+| 層             | manifest                                        | 適用先               |
+| -------------- | ----------------------------------------------- | -------------------- |
+| 常に           | `common` / `packages` / `custom` / `winget_cli` | すべての環境         |
+| デスクトップ層 | `gui` / `flatpak` / `custom-gui` / `winget_gui` | デスクトップ環境のみ |
+
+デスクトップ環境かどうかは「macOS・Windows なら常に真、Linux は WSL でなく、かつ表示先
+（`DISPLAY` / `WAYLAND_DISPLAY`）がある」で判定する。
 
 winget/Store に載らない「野良」アプリは段階で扱う: ①宣言（manifest）→ ②custom（engine の個別インストーラ・
 現状すべてデスクトップアプリなので GUI 環境のみ実行）→ ③manual-tracked（記録のみ・audit で欠落検知）。

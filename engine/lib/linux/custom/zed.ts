@@ -1,6 +1,7 @@
 import { $ } from "@david/dax";
 import { log } from "../../logger.ts";
 import { detectDistro, type DistroName } from "../distro.ts";
+import { isNativeCommand } from "../wsl.ts";
 
 export type ZedInstallMethod = "pacman" | "script";
 
@@ -23,11 +24,23 @@ export function zedInstallMethod(distro: DistroName | undefined): ZedInstallMeth
 }
 
 /**
+ * Linux ネイティブの Zed が入っているか。Arch 版は zfs の zed と衝突を避けて zeditor 名になる。
+ *
+ * WSL は interop で Windows 版 Zed も PATH に載せるため、パスを見て Linux 側の導入だけを数える。
+ */
+async function hasNativeZed(): Promise<boolean> {
+  for (const name of ["zed", "zeditor"]) {
+    const path = (await $`command -v ${name}`.noThrow().text()).trim();
+    if (isNativeCommand(path)) return true;
+  }
+  return false;
+}
+
+/**
  * Zed エディタをネイティブ導入する。導入済みなら何もしない。
  *
  * IDE はホストのツールチェイン・統合ターミナル連携が必須なため flatpak のサンドボックスは避ける。
- * Arch は pacman、それ以外は公式 install スクリプト（~/.local 配下・自己更新）で入れる。Arch 版の
- * 実行ファイルは zfs の zed と衝突を避けて zeditor 名になるため、導入判定では zed / zeditor 両方を見る。
+ * Arch は pacman、それ以外は公式 install スクリプト（~/.local 配下・自己更新）で入れる。
  */
 export async function installZed(): Promise<void> {
   if (Deno.build.os !== "linux") {
@@ -35,7 +48,7 @@ export async function installZed(): Promise<void> {
     return;
   }
 
-  if (await $.commandExists("zed") || await $.commandExists("zeditor")) {
+  if (await hasNativeZed()) {
     log.success("Zed は既にインストールされています");
     return;
   }

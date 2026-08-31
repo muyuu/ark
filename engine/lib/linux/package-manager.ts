@@ -47,3 +47,27 @@ export function cleanupCommands(pm: PackageManager): string[][] {
       return [["dnf", "autoremove", "-y"], ["dnf", "clean", "all"]];
   }
 }
+
+/**
+ * パッケージをまとめて入れ、失敗したら 1 つずつ入れ直して落ちた物の名前を返す。
+ *
+ * distro PM は 1 つでも存在しない名前があるとコマンド全体が失敗するので、まとめたままでは
+ * 「1 個の書き間違いで全滅」になる。通常時は 1 回の呼び出しで済み、失敗したときだけ切り分けの
+ * コストを払う。
+ *
+ * install は「その名前群の導入に成功したか」を返す関数（sudo の実行は呼び出し側が持つ）。
+ */
+export async function installEach(
+  packages: string[],
+  install: (names: string[]) => Promise<boolean>,
+): Promise<string[]> {
+  if (packages.length === 0) return [];
+  if (await install(packages)) return [];
+  if (packages.length === 1) return [...packages];
+
+  const failed: string[] = [];
+  for (const name of packages) {
+    if (!(await install([name]))) failed.push(name);
+  }
+  return failed;
+}

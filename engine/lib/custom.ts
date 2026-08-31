@@ -2,6 +2,7 @@ import { join } from "@std/path";
 import { $ } from "@david/dax";
 import { readTextOr } from "./fs.ts";
 import { log } from "./logger.ts";
+import { report } from "./report.ts";
 import {
   type CustomApp,
   type InstallMethod,
@@ -99,13 +100,14 @@ async function runMethod(app: CustomApp, method: InstallMethod): Promise<void> {
 
 /**
  * 宣言 1 件を導入する。`install` があれば宣言どおりに、無ければ engine の installer に任せる。
- * どちらも冪等（導入済みなら何もしない）。
+ * どちらも冪等（導入済みなら何もしない）。失敗しても例外にせず、記録して次へ進む。
  */
 async function installApp(app: CustomApp, distro: string | undefined): Promise<void> {
   if (Object.keys(app.install).length === 0) {
     const builtin = BUILTIN[app.name];
     if (!builtin) {
       log.warning(`⚠️ ${app.name}: 導入方法の宣言も engine の installer もありません`);
+      report.record("custom", app.name);
       return;
     }
     log.info(`🔧 custom: ${app.name} を導入します...`);
@@ -145,7 +147,12 @@ export async function runCustomInstallers(
   for (const root of roots) {
     const apps = parseCustomApps(await readTextOr(join(root, "app", os, manifest), ""));
     for (const app of apps) {
-      await installApp(app, distro);
+      try {
+        await installApp(app, distro);
+      } catch (err) {
+        log.warning(`⚠️ ${app.name}: 導入に失敗しました（スキップ）: ${err}`);
+        report.record("custom", app.name);
+      }
     }
   }
 }

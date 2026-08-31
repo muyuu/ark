@@ -70,8 +70,12 @@ jobs:
       - name: PSScriptAnalyzer
         shell: pwsh
         run: |
-          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
-          # Write-Host は対話的な進捗表示に使っており意図どおりなので除外する。
+          if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
+            Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          }
+          # 除外する規則:
+          #   PSAvoidUsingWriteHost                     進捗表示が目的なので意図どおり
+          #   PSUseShouldProcessForStateChangingFunctions  スクリプト内のヘルパで、公開する cmdlet ではない
           $found = Invoke-ScriptAnalyzer -Path bootstrap.ps1 -Severity Warning,Error `
-            -ExcludeRule PSAvoidUsingWriteHost
+            -ExcludeRule PSAvoidUsingWriteHost, PSUseShouldProcessForStateChangingFunctions
           if ($found) { $found | Format-List; exit 1 }

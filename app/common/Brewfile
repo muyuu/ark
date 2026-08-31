@@ -5,6 +5,7 @@
 # ファイル操作
 brew "eza"          # ls の代替
 brew "tree"         # ディレクトリ構造表示
+brew "dust"         # du の代替（使用量をツリーとバーで表示）
 
 # 検索
 brew "fzf"          # ファジーファインダー

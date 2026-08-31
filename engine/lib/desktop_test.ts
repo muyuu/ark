@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { isDesktopEnv, isDevEnv } from "./desktop.ts";
+import { isDesktopEnv, isDevEnv, isServerEnv } from "./desktop.ts";
 
 Deno.test("isDesktopEnv: macOS / Windows は常にデスクトップ", () => {
   assertEquals(isDesktopEnv("darwin", false, undefined), true);
@@ -26,4 +26,16 @@ Deno.test("isDevEnv: デスクトップと WSL は開発機", () => {
 
 Deno.test("isDevEnv: 表示先の無い Linux（サーバ）は開発機ではない", () => {
   assertEquals(isDevEnv("linux", false, undefined), false);
+});
+
+Deno.test("isServerEnv: 表示先の無い Linux だけがサーバ", () => {
+  assertEquals(isServerEnv("linux", false, undefined), true);
+  assertEquals(isServerEnv("linux", false, ""), true);
+});
+
+Deno.test("isServerEnv: 開発機（デスクトップ・WSL）はサーバではない", () => {
+  assertEquals(isServerEnv("linux", false, ":0"), false);
+  assertEquals(isServerEnv("linux", true, ":0"), false);
+  assertEquals(isServerEnv("darwin", false, undefined), false);
+  assertEquals(isServerEnv("windows", false, undefined), false);
 });

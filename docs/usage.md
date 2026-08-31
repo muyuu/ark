@@ -26,18 +26,19 @@
 
 ## 何かを足したいとき
 
-| 足すもの                                 | 置き場所                                                                                           |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| CLI ツール（開発機のみ・mac/Linux 共通） | `app/common/Brewfile`                                                                              |
-| macOS の GUI アプリ                      | `app/macos/Brewfile` の `cask`                                                                     |
-| Linux の最小パッケージ（サーバ含む）     | `app/linux/packages` ＋ 名前が違う distro は `app/linux/distro/<distro>.map`                       |
-| Linux の開発ツール                       | `app/linux/dev`（同上）                                                                            |
-| Linux のデスクトップ向け                 | `app/linux/desktop`（同上）                                                                        |
-| Linux の GUI アプリ（Flatpak）           | `app/linux/flatpak`                                                                                |
-| Windows のアプリ                         | `app/windows/winget_cli`（CLI）/ `winget_gui`（GUI）                                               |
-| PM に無い野良アプリ                      | `app/<os>/custom.toml`（最小）/ `custom-dev.toml`（開発機）/ `custom-desktop.toml`（デスクトップ） |
-| dotfile                                  | `config/` 配下に置く（`.config` / `.claude` / `.zsh.d` は中身が個別にリンクされる）                |
-| 自前コマンド                             | `command/<name>/`（`ark install` がビルドして `~/.local/bin` に置く）                              |
+| 足すもの                                 | 置き場所                                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| CLI ツール（開発機のみ・mac/Linux 共通） | `app/common/Brewfile`                                                                            |
+| macOS の GUI アプリ                      | `app/macos/Brewfile` の `cask`                                                                   |
+| Linux の最小パッケージ（サーバ含む）     | `app/linux/packages` ＋ 名前が違う distro は `app/linux/distro/<distro>.map`                     |
+| Linux のサーバ向け                       | `app/linux/server`（同上）                                                                       |
+| Linux の開発ツール                       | `app/linux/dev`（同上）                                                                          |
+| Linux のデスクトップ向け                 | `app/linux/desktop`（同上）                                                                      |
+| Linux の GUI アプリ（Flatpak）           | `app/linux/flatpak`                                                                              |
+| Windows のアプリ                         | `app/windows/winget_cli`（CLI）/ `winget_gui`（GUI）                                             |
+| PM に無い野良アプリ                      | `app/<os>/custom.toml`（最小）/ `custom-server.toml` / `custom-dev.toml` / `custom-desktop.toml` |
+| dotfile                                  | `config/` 配下に置く（`.config` / `.claude` / `.zsh.d` は中身が個別にリンクされる）              |
+| 自前コマンド                             | `command/<name>/`（`ark install` がビルドして `~/.local/bin` に置く）                            |
 
 足したら `ark install`（dotfiles なら `ark link-dotfiles`）で反映する。
 

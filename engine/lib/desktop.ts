@@ -42,3 +42,19 @@ export function isDesktop(): boolean {
 export function isDev(): boolean {
   return isDevEnv(Deno.build.os, isWsl(), currentDisplay());
 }
+
+/**
+ * サーバか（サーバ層の宣言を適用する対象か）を判定する。副作用のない本体。
+ *
+ * 開発機の裏返し。サービスを載せる箱で、人はそこへ ssh して作業するだけ。
+ * 層は「最小はどこでも、そのうえで用途別に server / dev / desktop」という形なので、
+ * server と dev は排他になる。
+ */
+export function isServerEnv(os: string, wsl: boolean, display: string | undefined): boolean {
+  return !isDevEnv(os, wsl, display);
+}
+
+/** 実行中の環境がサーバか。 */
+export function isServer(): boolean {
+  return isServerEnv(Deno.build.os, isWsl(), currentDisplay());
+}

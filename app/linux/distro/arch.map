@@ -20,3 +20,6 @@ albert=albert-launcher
 
 # 日本語入力
 fcitx5-frontends=fcitx5-gtk fcitx5-qt
+
+# ブラウザ（flatpak 版に移行済みなので、distro 版があれば削除する）
+brave-browser=brave-bin

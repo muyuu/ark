@@ -2,7 +2,7 @@ import { join } from "@std/path";
 import { $ } from "@david/dax";
 import { log } from "../logger.ts";
 import { readTextOr } from "../fs.ts";
-import { detectDistro, type PackageManager } from "./distro.ts";
+import { detectDistro, type DistroName, type PackageManager } from "./distro.ts";
 import { mapPackageNames, parsePackageMap, parseSystemPackages } from "./packages.ts";
 import { cleanupCommands, installArgs, updateCommands } from "./package-manager.ts";
 import { registerGpgKeys } from "./gpg-keys.ts";
@@ -28,17 +28,25 @@ function sudoPm(argv: string[]): ReturnType<typeof $> {
   return $`sudo env DEBIAN_FRONTEND=noninteractive ${argv}`;
 }
 
+/** その layer の distro マップ（論理名→実パッケージ名）を読む。無ければ空。 */
+async function loadDistroMap(
+  linuxDir: string,
+  distroName: DistroName,
+): Promise<Map<string, string[]>> {
+  return parsePackageMap(await readTextOr(join(linuxDir, "distro", `${distroName}.map`), ""));
+}
+
 /** distro PM 用のパッケージ manifest（packages / gui）を論理名→実名に変換して導入する。 */
 async function installManifest(
   linuxDir: string,
-  distroName: string,
+  distroName: DistroName,
   pm: PackageManager,
   manifest: string,
 ): Promise<void> {
   const content = await readTextOr(join(linuxDir, manifest), "");
   if (!content) return;
 
-  const map = parsePackageMap(await readTextOr(join(linuxDir, "distro", `${distroName}.map`), ""));
+  const map = await loadDistroMap(linuxDir, distroName);
   const packages = parseSystemPackages(content).flatMap((name) => mapPackageNames(map, name));
   if (packages.length === 0) return;
 
@@ -93,7 +101,10 @@ export async function installLinuxSystem(roots: string[]): Promise<void> {
     for (const dir of dirs) {
       await installManifest(dir, distro.name, distro.packageManager, "gui");
     }
-    for (const dir of dirs) await setupFlatpak(distro.packageManager, join(dir, "flatpak"));
+    for (const dir of dirs) {
+      const map = await loadDistroMap(dir, distro.name);
+      await setupFlatpak(distro.packageManager, join(dir, "flatpak"), map);
+    }
   }
 
   log.info("クリーンアップします...");

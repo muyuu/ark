@@ -26,6 +26,9 @@ import { log } from "./lib/logger.ts";
  * 宣言と実機のズレを見つける。`ark audit` の裏返しで、**宣言にあるのに実機で効いていない物**を挙げる。
  *
  * 何も直さない。新しいマシンや久しぶりのマシンで「何かおかしい」と思ったときに最初に叩くもの。
+ *
+ * 既定ではズレがあっても 0 で終わる。見つけて直すのは人で、報告そのものは失敗ではないため。
+ * 自動化から「ズレがあること」を検知したいときは `--strict` を渡す（install と同じ扱い）。
  */
 
 function existsSync(path: string): boolean {
@@ -118,6 +121,6 @@ if (import.meta.main) {
   } else {
     log.warning(`⚠️ ${findings.length} 件のズレが見つかりました:`);
     for (const line of formatFindings(findings)) log.warning(line);
-    Deno.exit(1);
+    if (Deno.args.includes("--strict")) Deno.exit(1);
   }
 }

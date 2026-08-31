@@ -13,7 +13,7 @@ description = "app/ の宣言を適用してパッケージを導入する（--s
 run = "deno run -A engine/install.ts"
 
 [tasks.doctor]
-description = "宣言にあるのに実機で効いていない物を探す（変更はしない）"
+description = "宣言にあるのに実機で効いていない物を探す（変更はしない。--strict でズレがあれば 0 以外）"
 run = "deno run -A engine/doctor.ts"
 
 [tasks.audit]

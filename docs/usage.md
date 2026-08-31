@@ -16,6 +16,7 @@
 | `ark install -- --strict`                          | 同上。1 つでも入らなければ 0 以外で終了する（自動化から呼ぶとき用）             |
 | `ark link-dotfiles`                                | `config/` を `$HOME` へ symlink で展開する                                      |
 | `ark doctor`                                       | 宣言にあるのに実機で効いていない物を探す（変更はしない）                        |
+| `ark doctor -- --strict`                           | 同上。ズレがあれば 0 以外で終了する                                             |
 | `ark audit`                                        | 宣言に無いのに入っているパッケージを棚卸しする（変更はしない）                  |
 | `ark overlay [add <repo>]`                         | overlay を登録・取得する                                                        |
 | `ark ssh-keys`                                     | 宣言された SSH 鍵をこのマシンに揃える（GitHub 登録はしない）                    |
@@ -107,4 +108,5 @@ distro の package manager はまとめて 1 コマンドで入れ、失敗し�
   wt: ビルドされていません → ark install
 ```
 
-ズレがあれば 0 以外で終了するので、自動化からも使える。
+既定ではズレがあっても 0 で終わる——見つけて直すのは人で、報告そのものは失敗ではないため。自動化から
+検知したいときだけ `ark doctor -- --strict` を使う（`ark install` と同じ扱い）。

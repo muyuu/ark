@@ -51,18 +51,23 @@ export async function upgradeAllWinget(): Promise<void> {
     .noThrow();
 }
 
-async function wingetInstall(id: string, scope: "machine" | "user"): Promise<boolean> {
+async function wingetInstall(id: string, scope?: "machine" | "user"): Promise<boolean> {
+  const scopeArg = scope ? ["--scope", scope] : [];
   const result =
-    await $`winget install --id ${id} -e --accept-source-agreements --accept-package-agreements --scope ${scope}`
+    await $`winget install --id ${id} -e --accept-source-agreements --accept-package-agreements ${scopeArg}`
       .noThrow();
   return result.code === 0;
 }
 
 /**
  * winget で各 ID を導入する。導入済みはスキップする。
- * - scope="user": user スコープ固定（CLI 向け）。
+ * - scope="user": user スコープ優先（CLI 向け）。
  * - scope="machine": machine（全ユーザー）優先で入れ、machine 非対応（Spotify 等）や非管理者時は
  *   user にフォールバックする（GUI 向け）。アプリ設定はスコープに関係なくユーザーごとに効く。
+ *
+ * どちらも最後はスコープ指定なしにフォールバックする。manifest の installer が `Scope` を宣言して
+ * いない（Rustlang.Rustup の rustup-init.exe 等）と、新しめの winget は `--scope` 指定時に
+ * 「該当するインストーラーが見つかりません」で弾く。スコープ無しなら winget の既定で入る。
  */
 export async function installWinget(ids: string[], scope: "user" | "machine"): Promise<void> {
   for (const id of ids) {
@@ -72,8 +77,9 @@ export async function installWinget(ids: string[], scope: "user" | "machine"): P
     }
     log.info(`📦 ${id} をインストールしています...`);
     const ok = scope === "machine"
-      ? (await wingetInstall(id, "machine") || await wingetInstall(id, "user"))
-      : await wingetInstall(id, "user");
+      ? (await wingetInstall(id, "machine") || await wingetInstall(id, "user") ||
+        await wingetInstall(id))
+      : (await wingetInstall(id, "user") || await wingetInstall(id));
     if (!ok) {
       log.warning(`⚠️ ${id} の導入に失敗しました（スキップ）`);
       report.record("winget", id);

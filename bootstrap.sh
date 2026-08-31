@@ -7,6 +7,7 @@ set -euo pipefail
 #
 #   curl -fsSL https://raw.githubusercontent.com/muyuu/ark/main/bootstrap.sh | bash
 #   （clone 済みなら）./bootstrap.sh
+#   （自動化から）./bootstrap.sh --strict   … 導入に失敗した物があれば 0 以外で終了する
 
 # clone 済みならスクリプト位置、未取得（curl | bash 経由）なら既定パスへ
 if [ -n "${BASH_SOURCE:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
@@ -118,7 +119,8 @@ if [ -f "$HOME/.config/ark/overlays.toml" ]; then
 fi
 
 echo "▶ パッケージと自前コマンドを導入しています..."
-mise exec deno -- deno run -A "$ARK_DIR/engine/install.ts"
+# 引数はそのまま install へ渡す（--strict で失敗があれば 0 以外で終了する）
+mise exec deno -- deno run -A "$ARK_DIR/engine/install.ts" "$@"
 
 echo "✅ セットアップ完了。新しいシェルを開くと zsh と PATH が反映されます。"
 echo "   以降の更新は 'mise run install'、dotfiles の再展開は 'mise run link-dotfiles'。"

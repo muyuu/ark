@@ -1,4 +1,5 @@
 import { assertEquals } from "@std/assert";
+import { join } from "@std/path";
 import {
   hasHostBlock,
   keyFile,
@@ -8,20 +9,28 @@ import {
   sshConfigBlock,
 } from "./ssh.ts";
 
+// パスは OS の区切り文字で組み立てる（keyFile が join を使うため、期待値も同じ形にする）。
+const HOME = join("/home/me");
+
+/** ~/.ssh 配下の期待パス。 */
+function sshPath(base: string): string {
+  return join(HOME, ".ssh", base);
+}
+
 Deno.test("keyFile: 既定鍵は id_ed25519、用途別の鍵は名前を接尾辞にする", () => {
-  assertEquals(keyFile("/home/me", "default"), "/home/me/.ssh/id_ed25519");
-  assertEquals(keyFile("/home/me", "work"), "/home/me/.ssh/id_ed25519_work");
+  assertEquals(keyFile(HOME, "default"), sshPath("id_ed25519"));
+  assertEquals(keyFile(HOME, "work"), sshPath("id_ed25519_work"));
 });
 
 Deno.test("resolveKeys: 宣言に鍵ファイルのパスを与える", () => {
-  const keys = resolveKeys("/home/me", [
+  const keys = resolveKeys(HOME, [
     { name: "default", host: "github.com" },
     { name: "work", host: "github.com-work" },
   ]);
 
   assertEquals(keys.length, 2);
-  assertEquals(keys[0].file, "/home/me/.ssh/id_ed25519");
-  assertEquals(keys[1].file, "/home/me/.ssh/id_ed25519_work");
+  assertEquals(keys[0].file, sshPath("id_ed25519"));
+  assertEquals(keys[1].file, sshPath("id_ed25519_work"));
 });
 
 Deno.test("parseKeyDecls: [[key]] を順序を保って読み、name の無いものは捨てる", () => {

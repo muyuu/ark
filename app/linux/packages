@@ -1,19 +1,16 @@
 # ==================================================
-# Linux システムパッケージ（ディストリビューション共通・CLI / システム層）
+# Linux 最小パッケージ（distro PM・すべての環境）
 # ==================================================
 # 論理パッケージ名を記載する。実際のパッケージ名が distro で異なる場合は distro/ のマップで変換する。
-# ここは常に導入する層。デスクトップとして使う環境だけに要る物は desktop を参照。
+#
+# ここは VPS のようなサーバにも入る層。ssh して中を見て git を触るのに要る物だけに絞る。
+# 開発ツールは dev、デスクトップ向けは desktop を参照。
 # ==================================================
 
 # システム関連
 ca-certificates
 
-# セキュリティ関連
-nftables        # iptables の後継
-
-# 開発ツール
-build-essential # ネイティブビルドツール一式
-clang           # Clang コンパイラ
-libclang-dev    # libclang 開発ヘッダー
-cmake           # CMake
-pkg-config      # ネイティブビルドで必要
+# ファイルを読む・編集する
+# （brew を入れない環境向け。CLI ツール一式は開発機だけ common/Brewfile から入る）
+vim               # config/.vimrc は syntax / termguicolors を使うので vim-tiny では動かない
+bat               # 構文ハイライト付きの cat。Debian 系のコマンド名は batcat

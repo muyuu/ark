@@ -1,0 +1,27 @@
+# ==================================================
+# Linux custom アプリ（開発機のみ）
+# ==================================================
+# package manager に無い、または distro 横断で導入経路が異なるアプリを宣言する。
+#
+#   name      … アプリの識別子
+#   commands  … 導入済み判定に使うコマンド名
+#   paths     … 導入済み判定に使うパス（PATH に載らない物）
+#   install.<distro> / install.default … 導入方法（package / ppa / script / tarball+dest）
+#
+# install を書かなければ engine の individual installer（engine/lib/<os>/custom/）に任せる。
+# デスクトップと WSL に適用し、サーバには入れない。デスクトップでしか意味の無いものは
+# custom-desktop.toml を参照。
+# ==================================================
+
+# エディタ。IDE はホスト連携が要るので flatpak でなくネイティブで入れる。
+# Arch 版の実行ファイルは zfs の zed と衝突を避けて zeditor 名になる。
+[[app]]
+name = "zed"
+commands = ["zed", "zeditor"]
+
+  [app.install.arch]
+  package = "zed"
+
+  # 公式パッケージがあるのは Arch のみ。他は公式スクリプト（~/.local 配下・自己更新）。
+  [app.install.default]
+  script = "https://zed.dev/install.sh"

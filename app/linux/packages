@@ -2,7 +2,7 @@
 # Linux システムパッケージ（ディストリビューション共通・CLI / システム層）
 # ==================================================
 # 論理パッケージ名を記載する。実際のパッケージ名が distro で異なる場合は distro/ のマップで変換する。
-# ここは CLI・システム層（GUI を持たない環境でも導入する）。GUI 向けは gui を参照。
+# ここは常に導入する層。デスクトップとして使う環境だけに要る物は desktop を参照。
 # ==================================================
 
 # システム関連
@@ -10,9 +10,6 @@ ca-certificates
 
 # セキュリティ関連
 nftables        # iptables の後継
-clamav          # ウィルススキャン
-chkrootkit      # ルートキット検出
-rkhunter        # ルートキット検出
 
 # 開発ツール
 build-essential # ネイティブビルドツール一式
@@ -20,7 +17,3 @@ clang           # Clang コンパイラ
 libclang-dev    # libclang 開発ヘッダー
 cmake           # CMake
 pkg-config      # ネイティブビルドで必要
-
-# フォント
-firacode        # Fira Code フォント
-noto-cjk        # Noto Sans CJK（REAPER 等の日本語表示。豆腐回避）

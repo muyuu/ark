@@ -132,7 +132,7 @@ async function installApp(app: CustomApp, distro: string | undefined): Promise<v
 /**
  * 各 layer の `app/<os>/<manifest>` に宣言された custom アプリを合成順に導入する。
  *
- * manifest は環境の層に対応する: `custom.toml` は常に、`custom-gui.toml` はデスクトップ環境でだけ。
+ * manifest は環境の層に対応する: `custom.toml` は常に、`custom-desktop.toml` はデスクトップ環境でだけ。
  * overlay も同じ宣言を持てる（engine のコードを持たない overlay でも、宣言で書ける物は足せる）。
  */
 export async function runCustomInstallers(

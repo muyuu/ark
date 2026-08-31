@@ -9,7 +9,7 @@
 #   install.<distro> / install.default … 導入方法（package / ppa / script / tarball+dest）
 #
 # install を書かなければ engine の individual installer（engine/lib/<os>/custom/）に任せる。
-# ここは開発に要るもの。デスクトップ環境でしか意味の無いものは custom-gui.toml を参照。
+# ここは開発に要るもの。デスクトップ環境でしか意味の無いものは custom-desktop.toml を参照。
 # ==================================================
 
 # エディタ。IDE はホスト連携が要るので flatpak でなくネイティブで入れる。

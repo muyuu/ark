@@ -124,6 +124,26 @@ async function buildCargoCommand(
  *
  * ビルドの失敗は警告にとどめ、他のコマンドと後続の処理は続ける。
  */
+/** command/ 配下の Cargo プロジェクトから、生成されるバイナリ名を集める。 */
+export async function commandBinNames(repoRoot: string): Promise<string[]> {
+  const commandDir = join(repoRoot, "command");
+  const names: string[] = [];
+  let entries: Deno.DirEntry[];
+  try {
+    entries = [...Deno.readDirSync(commandDir)];
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) return names;
+    throw err;
+  }
+
+  for (const entry of entries) {
+    if (!entry.isDirectory) continue;
+    const cargoToml = await readTextOrUndefined(join(commandDir, entry.name, "Cargo.toml"));
+    if (cargoToml !== undefined) names.push(cargoBinName(cargoToml) ?? entry.name);
+  }
+  return names;
+}
+
 export async function buildCommands(repoRoot: string, homeDir: string): Promise<void> {
   if (Deno.build.os === "windows") {
     log.info("Windows では command のビルドを既定でスキップします");

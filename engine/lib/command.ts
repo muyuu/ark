@@ -3,6 +3,7 @@ import { parse as parseToml } from "@std/toml";
 import { ensureDir } from "@std/fs";
 import { $ } from "@david/dax";
 import { log } from "./logger.ts";
+import { report } from "./report.ts";
 
 /** Cargo.toml からビルド成果物のバイナリ名を得る（`[[bin]].name` 優先、無ければ `[package].name`）。 */
 export function cargoBinName(cargoToml: string): string | undefined {
@@ -156,7 +157,5 @@ export async function buildCommands(repoRoot: string, homeDir: string): Promise<
     }
   }
 
-  if (failed.length > 0) {
-    log.warning(`⚠️ ビルドできなかった自前コマンド: ${failed.join(", ")}`);
-  }
+  for (const name of failed) report.record("command", name);
 }

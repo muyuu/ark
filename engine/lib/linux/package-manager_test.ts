@@ -1,5 +1,11 @@
 import { assertEquals } from "@std/assert";
-import { cleanupCommands, installArgs, purgeArgs, updateCommands } from "./package-manager.ts";
+import {
+  cleanupCommands,
+  installArgs,
+  installEach,
+  purgeArgs,
+  updateCommands,
+} from "./package-manager.ts";
 
 Deno.test("installArgs: PM ごとのインストールコマンド", () => {
   assertEquals(installArgs("apt", ["git"]), ["apt", "install", "-y", "git"]);
@@ -23,4 +29,49 @@ Deno.test("cleanupCommands: PM ごとの掃除コマンド列", () => {
   assertEquals(cleanupCommands("apt"), [["apt", "autoremove", "-y"], ["apt", "autoclean"]]);
   assertEquals(cleanupCommands("pacman"), [["pacman", "-Sc", "--noconfirm"]]);
   assertEquals(cleanupCommands("dnf"), [["dnf", "autoremove", "-y"], ["dnf", "clean", "all"]]);
+});
+
+Deno.test("installEach: まとめて成功すれば 1 回で済ませる", async () => {
+  const calls: string[][] = [];
+  const failed = await installEach(["a", "b", "c"], (names) => {
+    calls.push(names);
+    return Promise.resolve(true);
+  });
+
+  assertEquals(failed, []);
+  assertEquals(calls, [["a", "b", "c"]]);
+});
+
+Deno.test("installEach: まとめて失敗したら 1 つずつ入れ直し、落ちた物だけ返す", async () => {
+  const calls: string[][] = [];
+  const failed = await installEach(["a", "bad", "c"], (names) => {
+    calls.push(names);
+    return Promise.resolve(!names.includes("bad"));
+  });
+
+  assertEquals(failed, ["bad"]);
+  // まとめて 1 回 → 個別に 3 回
+  assertEquals(calls, [["a", "bad", "c"], ["a"], ["bad"], ["c"]]);
+});
+
+Deno.test("installEach: 空なら何も実行しない", async () => {
+  const calls: string[][] = [];
+  const failed = await installEach([], (names) => {
+    calls.push(names);
+    return Promise.resolve(true);
+  });
+
+  assertEquals(failed, []);
+  assertEquals(calls, []);
+});
+
+Deno.test("installEach: 1 個だけなら個別の入れ直しをしない", async () => {
+  const calls: string[][] = [];
+  const failed = await installEach(["bad"], (names) => {
+    calls.push(names);
+    return Promise.resolve(false);
+  });
+
+  assertEquals(failed, ["bad"]);
+  assertEquals(calls, [["bad"]]);
 });

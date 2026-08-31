@@ -10,6 +10,7 @@ import { layerRoots } from "./lib/overlay.ts";
 import { warnRenamedManifests } from "./lib/legacy-manifest.ts";
 import { setupZsh } from "./lib/zsh.ts";
 import { log } from "./lib/logger.ts";
+import { report } from "./lib/report.ts";
 
 /**
  * 宣言（app/）を適用してパッケージを導入する。core と取得済み overlay を合成順に処理し、OS で導入経路を
@@ -19,6 +20,9 @@ import { log } from "./lib/logger.ts";
  * サーバ層（`server`）は表示先の無い Linux に、開発層（`dev` / `custom-dev.toml`）はデスクトップと
  * WSL に、デスクトップ層（`desktop` / `flatpak` / `custom-desktop.toml`）はデスクトップにだけ適用する。
  * サーバ層と開発層は排他。
+ *
+ * 1 つの導入に失敗しても他は進める。何が入らなかったかは最後にまとめて出す。`--strict` を渡すと
+ * 失敗があったときに 0 以外で終了する（オーケストレーションから呼ぶとき用）。
  */
 if (import.meta.main) {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..");
@@ -52,4 +56,7 @@ if (import.meta.main) {
     await buildCommands(repoRoot, home);
     await setupZsh(home);
   }
+
+  report.print();
+  if (report.hasFailures && Deno.args.includes("--strict")) Deno.exit(1);
 }

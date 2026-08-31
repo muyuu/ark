@@ -4,7 +4,8 @@ import { log } from "../logger.ts";
 import { readTextOr } from "../fs.ts";
 import { detectDistro, type DistroName, type PackageManager } from "./distro.ts";
 import { mapPackageNames, parsePackageMap, parseSystemPackages } from "./packages.ts";
-import { cleanupCommands, installArgs, updateCommands } from "./package-manager.ts";
+import { cleanupCommands, installArgs, installEach, updateCommands } from "./package-manager.ts";
+import { report } from "../report.ts";
 import { registerGpgKeys } from "./gpg-keys.ts";
 import { setupFlatpak } from "./flatpak.ts";
 import { runDistroPostInstall } from "./post-install.ts";
@@ -25,6 +26,11 @@ function existsSync(path: string): boolean {
  */
 function sudoPm(argv: string[]): ReturnType<typeof $> {
   return $`sudo env DEBIAN_FRONTEND=noninteractive ${argv}`;
+}
+
+/** sudoPm を実行し、成功したかを返す（失敗しても例外にしない）。 */
+async function sudoPmOk(argv: string[]): Promise<boolean> {
+  return (await sudoPm(argv).noThrow()).code === 0;
 }
 
 /** その layer の distro マップ（論理名→実パッケージ名）を読む。無ければ空。 */
@@ -50,7 +56,11 @@ async function installManifest(
   if (packages.length === 0) return;
 
   log.info(`${manifest} をインストールします...`);
-  await sudoPm(installArgs(pm, packages));
+  const failed = await installEach(packages, (names) => sudoPmOk(installArgs(pm, names)));
+  for (const name of failed) {
+    log.warning(`⚠️ ${name} を導入できませんでした（スキップ）`);
+    report.record(pm, name);
+  }
 }
 
 /** 各 layer の app/linux ディレクトリ（存在するかは各処理側で判定）。 */
@@ -58,9 +68,13 @@ function linuxDirs(roots: string[]): string[] {
   return roots.map((root) => join(root, "app", "linux"));
 }
 
-async function runAll(commands: string[][]): Promise<void> {
+/** システム更新・掃除のコマンド列。1 つ失敗しても以降と後続の処理は続ける。 */
+async function runAll(label: string, commands: string[][]): Promise<void> {
   for (const argv of commands) {
-    await sudoPm(argv);
+    if (!(await sudoPmOk(argv))) {
+      log.warning(`⚠️ ${label} に失敗しました: ${argv.join(" ")}`);
+      report.record(label, argv.join(" "));
+    }
   }
 }
 
@@ -84,12 +98,14 @@ export async function installLinuxSystem(
 
   const distro = detectDistro(existsSync);
   if (!distro) {
-    log.error("未対応のディストリビューションです");
-    Deno.exit(1);
+    // ここで exit すると自前コマンドのビルドや zsh 設定まで巻き添えになる。記録して戻る。
+    log.error("未対応のディストリビューションです。システム層をスキップします");
+    report.record("distro", "未対応のディストリビューション");
+    return;
   }
   log.info(`${distro.name} 系を検出しました`);
 
-  await runAll(updateCommands(distro.packageManager));
+  await runAll("distro update", updateCommands(distro.packageManager));
 
   if (distro.name === "debian") {
     for (const dir of dirs) await registerGpgKeys(join(dir, "distro", "gpg-keys.txt"));
@@ -122,7 +138,7 @@ export async function installLinuxSystem(
   }
 
   log.info("クリーンアップします...");
-  await runAll(cleanupCommands(distro.packageManager));
+  await runAll("distro cleanup", cleanupCommands(distro.packageManager));
 
   await runDistroPostInstall(distro.name);
   log.success("🎉 Linux システム層のセットアップが完了しました！");

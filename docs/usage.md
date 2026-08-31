@@ -13,6 +13,7 @@
 | `ark`                                              | タスク一覧                                                                      |
 | `ark update`                                       | core/overlay を pull → 鍵 → dotfiles → パッケージまで一括で最新化（普段はこれ） |
 | `ark install`                                      | 宣言（`app/`）を適用してパッケージを導入する                                    |
+| `ark install -- --strict`                          | 同上。1 つでも入らなければ 0 以外で終了する（自動化から呼ぶとき用）             |
 | `ark link-dotfiles`                                | `config/` を `$HOME` へ symlink で展開する                                      |
 | `ark audit`                                        | 宣言に無いのに入っているパッケージを棚卸しする（変更はしない）                  |
 | `ark overlay [add <repo>]`                         | overlay を登録・取得する                                                        |
@@ -64,3 +65,20 @@ ark update                           # 取得済み overlay も含めて適用
 
 worktree は `<repo>.worktrees/<name>/` に置かれる。`~/.config/wt/<repo>.symlinks` に列挙したファイル
 だけが main から symlink される（secret はコピーしない）。
+
+## 適用できなかったものの扱い
+
+1 つの導入に失敗しても他は進める（宣言の大半は互いに独立しているため）。何が入らなかったかは実行の
+最後にまとめて出る。
+
+```
+WARNING: ⚠️ 適用できなかったものがあります:
+WARNING:    apt: dolphin, konsole
+WARNING:    custom: reaper
+```
+
+distro の package manager はまとめて 1 コマンドで入れ、失敗したときだけ 1 つずつ入れ直して落ちた物を
+特定する。通常時のコストは増やさず、書き間違い 1 つで全滅しないようにするため。
+
+自動化（keel など）から呼ぶときは `--strict` を付ける。失敗があれば 0 以外で終了するので、呼び出し側が
+気づける。

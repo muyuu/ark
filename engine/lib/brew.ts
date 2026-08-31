@@ -1,6 +1,7 @@
 import { join } from "@std/path";
 import { $ } from "@david/dax";
 import { log } from "./logger.ts";
+import { report } from "./report.ts";
 
 /**
  * trusted_taps ファイルの内容を tap 名のリストに解釈する。
@@ -58,8 +59,10 @@ export async function installBrew(roots: string[]): Promise<void> {
   }
 
   log.info("🍺 Homebrew を更新しています...");
-  await $`brew update`;
-  await $`brew upgrade -f`;
+  // 更新に失敗しても bundle は試す価値がある（既存の formula が壊れているだけのことがある）。
+  for (const step of [$`brew update`, $`brew upgrade -f`]) {
+    if ((await step.noThrow()).code !== 0) report.record("brew", "update");
+  }
 
   if (Deno.build.os === "darwin") {
     for (const root of roots) {
@@ -77,7 +80,11 @@ export async function installBrew(roots: string[]): Promise<void> {
     for (const file of selectBrewfiles(Deno.build.os, root)) {
       if (!fileExists(file)) continue;
       log.info(`📦 ${file} を bundle しています...`);
-      await $`brew bundle --file=${file} --no-upgrade`;
+      // brew bundle は 1 件ずつ試すので、落ちるのは「入らなかった物がある」の意味。
+      if ((await $`brew bundle --file=${file} --no-upgrade`.noThrow()).code !== 0) {
+        log.warning(`⚠️ ${file} に入らなかったものがあります`);
+        report.record("brew", file);
+      }
     }
   }
 

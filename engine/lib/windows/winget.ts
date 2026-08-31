@@ -1,5 +1,6 @@
 import { $ } from "@david/dax";
 import { log } from "../logger.ts";
+import { report } from "../report.ts";
 
 /** wingetfile を winget ID のリストに解釈する。1 行 1 ID、`#` 以降と空行は無視する。 */
 export function parseWingetfile(content: string): string[] {
@@ -73,6 +74,9 @@ export async function installWinget(ids: string[], scope: "user" | "machine"): P
     const ok = scope === "machine"
       ? (await wingetInstall(id, "machine") || await wingetInstall(id, "user"))
       : await wingetInstall(id, "user");
-    if (!ok) log.warning(`⚠️ ${id} の導入に失敗しました（スキップ）`);
+    if (!ok) {
+      log.warning(`⚠️ ${id} の導入に失敗しました（スキップ）`);
+      report.record("winget", id);
+    }
   }
 }

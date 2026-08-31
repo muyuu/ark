@@ -1,5 +1,6 @@
 import { $ } from "@david/dax";
 import { log } from "../logger.ts";
+import { report } from "../report.ts";
 import { readTextOr } from "../fs.ts";
 import type { PackageManager } from "./distro.ts";
 import { installArgs, purgeArgs } from "./package-manager.ts";
@@ -58,7 +59,10 @@ export async function setupFlatpak(
 
   for (const app of apps) {
     log.info(`インストール中: ${app}`);
-    await $`flatpak install -y flathub ${app}`.noThrow();
+    if ((await $`flatpak install -y flathub ${app}`.noThrow()).code !== 0) {
+      log.warning(`⚠️ ${app} を導入できませんでした（スキップ）`);
+      report.record("flatpak", app);
+    }
   }
   log.success("Flatpak アプリのインストール完了");
 }

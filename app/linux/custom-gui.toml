@@ -1,0 +1,21 @@
+# ==================================================
+# Linux custom アプリ（デスクトップ環境のみ）
+# ==================================================
+# custom.toml と同じ書式だが、デスクトップとして使う環境にだけ適用する。
+# WSL / headless では導入しない（ターミナルエミュレータ等はホスト側にあるため）。
+# ==================================================
+
+# ターミナル。Ubuntu 26.04 未満のベースには公式リポジトリに無いので community PPA を足す。
+[[app]]
+name = "ghostty"
+commands = ["ghostty"]
+
+  [app.install.arch]
+  package = "ghostty"
+
+  [app.install.fedora]
+  package = "ghostty"
+
+  [app.install.debian]
+  package = "ghostty"
+  ppa = "ppa:mkasberg/ghostty-ubuntu"

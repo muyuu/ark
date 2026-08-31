@@ -89,3 +89,14 @@ overlay は SSH で引くので、その鍵の宣言を overlay の中に置く�
 できる」と同じにわとりたまご）。bootstrap に要る鍵は overlay の外——既定か machine-local——で持つ。bootstrap に
 要らない用途別の鍵は overlay に宣言できる。マシンの用途はどの overlay を入れたかとほぼ同義なので、業務用の鍵は
 業務用 overlay に置くのが重複がない。
+
+## custom アプリは宣言で書き、書けない物だけ engine が持つ
+
+custom installer を engine のコードとして名前で引く形にすると、overlay は宣言だけ足しても
+「未知の installer」になり、自前のアプリを持てない（overlay は `app/` と `config/` だけの純コンテンツで、
+engine は core にしか無い）。実装のほとんどは「PM で入れる」「公式スクリプトを流す」「tarball を展開する」の
+繰り返しでもあった。
+
+そこで導入方法を宣言（`custom.toml`）に移し、engine は 3 つの方法を解釈するだけにした。宣言に載らない
+手順（配布ページの解析、パッチ当て等）を持つアプリだけ engine が installer を持ち、宣言側は `name` だけを
+書いて参照する。overlay は宣言で書ける範囲を自分で持てる。

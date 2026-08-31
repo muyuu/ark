@@ -2,6 +2,8 @@
 name = "wt"
 version = "0.1.0"
 edition = "2021"
+# Cargo.lock が v4 のため（v4 の読み書きは 1.78 以降）。ark はビルド前にこの値を見る。
+rust-version = "1.78"
 
 [[bin]]
 name = "wt"

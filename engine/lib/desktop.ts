@@ -19,8 +19,26 @@ export function isDesktopEnv(
   return (display ?? "") !== "";
 }
 
+/**
+ * 開発機か（開発層の宣言を適用する対象か）を判定する。副作用のない本体。
+ *
+ * デスクトップに加えて WSL も開発機。逆に表示先の無い Linux（VPS・コンテナ）は、人が作業する
+ * ためではなくサービスを載せるための箱なので対象外にする。
+ */
+export function isDevEnv(os: string, wsl: boolean, display: string | undefined): boolean {
+  return isDesktopEnv(os, wsl, display) || wsl;
+}
+
+function currentDisplay(): string | undefined {
+  return Deno.env.get("WAYLAND_DISPLAY") ?? Deno.env.get("DISPLAY");
+}
+
 /** 実行中の環境がデスクトップか。 */
 export function isDesktop(): boolean {
-  const display = Deno.env.get("WAYLAND_DISPLAY") ?? Deno.env.get("DISPLAY");
-  return isDesktopEnv(Deno.build.os, isWsl(), display);
+  return isDesktopEnv(Deno.build.os, isWsl(), currentDisplay());
+}
+
+/** 実行中の環境が開発機か。 */
+export function isDev(): boolean {
+  return isDevEnv(Deno.build.os, isWsl(), currentDisplay());
 }

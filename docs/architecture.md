@@ -49,34 +49,41 @@ ark は macOS / Linux（WSL）/ native Windows それぞれのマシン構成を
 
 どの環境で何を面倒みるかを先に決めてある。空欄を作らないのが目的で、「やらない」も宣言のうち。
 
-|                | パッケージ       | dotfiles                                 | 自前コマンド     | デスクトップ層 |
-| -------------- | ---------------- | ---------------------------------------- | ---------------- | -------------- |
-| macOS          | brew             | 全部                                     | ビルドする       | 入れる         |
-| Linux（GUI）   | brew + distro PM | 全部                                     | ビルドする       | 入れる         |
-| WSL            | brew + distro PM | 全部                                     | ビルドする       | **入れない**   |
-| native Windows | winget           | `.gitconfig` / `.config/tig` / `.claude` | **ビルドしない** | 入れる         |
+|                     | パッケージ             | dotfiles                                 | 自前コマンド     | デスクトップ層 |
+| ------------------- | ---------------------- | ---------------------------------------- | ---------------- | -------------- |
+| macOS               | brew                   | 全部                                     | ビルドする       | 入れる         |
+| Linux（GUI）        | brew + distro PM       | 全部                                     | ビルドする       | 入れる         |
+| WSL                 | brew + distro PM       | 全部                                     | ビルドする       | **入れない**   |
+| native Windows      | winget                 | `.gitconfig` / `.config/tig` / `.claude` | **ビルドしない** | 入れる         |
+| Linux サーバ（VPS） | distro PM の最小層のみ | 全部                                     | ビルドする       | **入れない**   |
 
-WSL と native Windows の位置づけ:
+WSL・native Windows・サーバの位置づけ:
 
 - **WSL は開発環境**（web と Rust）。WSLg で GUI は動くが、ブラウザ・ファイルマネージャ・IME と
   いったデスクトップの道具はホストの Windows 側にあるので入れない。開発に要るエディタ（Zed）だけは
-  デスクトップ層ではなく常時の層に置く。
+  デスクトップ層ではなく開発層に置く。
 - **native Windows でも Rust のビルド・実行はする**（母艦は WSL）。CLI は toolchain と ghq に絞り、
   便利 CLI は WSL 側で使う。dotfiles は native Windows で実際に読まれる物だけを展開する。
+- **Linux サーバ（VPS）ではホストの構成を持たない。** OS の設定・ファイアウォール・Docker・鍵の配布は
+  [keel](https://github.com/muyuu/keel)（Ansible）が持ち、ark は操作者の環境（dotfiles と、ssh して
+  中を見て git を触るための最小パッケージ）だけを見る。ark を呼ぶのも keel。brew は入れない。
 - ark 自身の `command/`（Rust）は unix API を使うため native Windows ではビルドしない。
 
 ## パッケージ（app/）
 
 宣言は OS 別の manifest に置く（`common` は macOS/Linux 共通）。導入対象は OS と環境で決まり、環境は
-自動判定する（手動フラグは持たない）。層は 2 つ:
+自動判定する（手動フラグは持たない）。層は 3 つで、下の層ほど適用先が狭い:
 
-| 層             | manifest                                                     | 適用先               |
-| -------------- | ------------------------------------------------------------ | -------------------- |
-| 常に           | `common` / `packages` / `custom.toml` / `winget_cli`         | すべての環境         |
-| デスクトップ層 | `desktop` / `flatpak` / `custom-desktop.toml` / `winget_gui` | デスクトップ環境のみ |
+| 層             | manifest                                                     | 適用先                     |
+| -------------- | ------------------------------------------------------------ | -------------------------- |
+| 最小           | `packages` / `custom.toml` / `winget_cli`                    | すべての環境（サーバ含む） |
+| 開発層         | `common`(Brewfile) / `dev` / `custom-dev.toml`               | デスクトップと WSL         |
+| デスクトップ層 | `desktop` / `flatpak` / `custom-desktop.toml` / `winget_gui` | デスクトップ環境のみ       |
 
-デスクトップ環境かどうかは「macOS・Windows なら常に真、Linux は WSL でなく、かつ表示先
-（`DISPLAY` / `WAYLAND_DISPLAY`）がある」で判定する。
+- **デスクトップ環境**: macOS・Windows なら常に真。Linux は WSL でなく、かつ表示先（`DISPLAY` /
+  `WAYLAND_DISPLAY`）がある。
+- **開発機**: デスクトップ、または WSL。表示先の無い Linux（VPS・コンテナ）は「人が作業する場所」では
+  なく「サービスを載せる箱」なので外れる。
 
 ### package manager に無いアプリ（custom）
 

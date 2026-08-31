@@ -70,13 +70,17 @@ async function runAll(commands: string[][]): Promise<void> {
  *
  * Homebrew / CLI ツール（Brewfile）は OS によらず installBrew が所有するためここでは扱わない。
  *
- * デスクトップ層（desktop パッケージ / Flatpak）はデスクトップ環境にだけ入れる。WSL はデスクトップとして
- * 使わない（ブラウザや IME はホストの Windows 側）ので対象外。判定は呼び出し側が行う。
+ * 開発層（dev）はデスクトップと WSL に、デスクトップ層（desktop / Flatpak）はデスクトップにだけ入れる。
+ * 表示先の無い Linux（VPS 等）には最小層（packages）しか入らない。判定は呼び出し側が行う。
  */
-export async function installLinuxSystem(roots: string[], desktop: boolean): Promise<void> {
+export async function installLinuxSystem(
+  roots: string[],
+  tiers: { desktop: boolean; dev: boolean },
+): Promise<void> {
   const dirs = linuxDirs(roots);
 
-  if (!desktop) log.info("デスクトップ環境ではないため、デスクトップ層はスキップします");
+  if (!tiers.dev) log.info("開発機ではないため、開発層とデスクトップ層はスキップします");
+  else if (!tiers.desktop) log.info("デスクトップ環境ではないため、デスクトップ層はスキップします");
 
   const distro = detectDistro(existsSync);
   if (!distro) {
@@ -95,7 +99,13 @@ export async function installLinuxSystem(roots: string[], desktop: boolean): Pro
     await installManifest(dir, distro.name, distro.packageManager, "packages");
   }
 
-  if (desktop) {
+  if (tiers.dev) {
+    for (const dir of dirs) {
+      await installManifest(dir, distro.name, distro.packageManager, "dev");
+    }
+  }
+
+  if (tiers.desktop) {
     for (const dir of dirs) {
       await installManifest(dir, distro.name, distro.packageManager, "desktop");
     }

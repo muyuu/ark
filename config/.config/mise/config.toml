@@ -6,6 +6,8 @@ paranoid = false
 node = "lts"
 deno = "latest"
 go = "latest"
-rust = "latest"
+# stable チャンネルで追う（"latest" は個別の版として解決され、古い toolchain が mise link で
+# 結び付いていると RUSTUP_TOOLCHAIN でそれが固定され続ける）
+rust = "stable"
 fnox = "latest"
 "npm:@devcontainers/cli" = "latest"

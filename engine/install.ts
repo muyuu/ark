@@ -3,7 +3,7 @@ import { $ } from "@david/dax";
 import { installBrew } from "./lib/brew.ts";
 import { buildCommands } from "./lib/command.ts";
 import { runCustomInstallers } from "./lib/custom.ts";
-import { isDesktop } from "./lib/desktop.ts";
+import { isDesktop, isDev } from "./lib/desktop.ts";
 import { installLinuxSystem } from "./lib/linux/install.ts";
 import { installWindows } from "./lib/windows/install.ts";
 import { layerRoots } from "./lib/overlay.ts";
@@ -15,8 +15,9 @@ import { log } from "./lib/logger.ts";
  * 宣言（app/）を適用してパッケージを導入する。core と取得済み overlay を合成順に処理し、OS で導入経路を
  * 振り分ける: Windows は winget、それ以外は Homebrew（+ Linux は distro のシステム層）と自前コマンド・zsh 設定。
  *
- * デスクトップ層（`desktop` / `flatpak` / `custom-desktop.toml`）はデスクトップ環境にだけ適用する。WSL や headless は
- * 開発環境なので、CLI/システム層と開発用の `custom` までを入れる。
+ * 層は 3 つ。最小（`packages` / `custom.toml`）はどこでも、開発層（`dev` / `custom-dev.toml`）は
+ * デスクトップと WSL に、デスクトップ層（`desktop` / `flatpak` / `custom-desktop.toml`）はデスクトップに
+ * だけ適用する。表示先の無い Linux（VPS 等）には最小層しか入らない。
  */
 if (import.meta.main) {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..");
@@ -29,6 +30,7 @@ if (import.meta.main) {
   const roots = await layerRoots(repoRoot, home);
   warnRenamedManifests(roots);
   const desktop = isDesktop();
+  const dev = isDev();
 
   log.info("🔧 mise のツールをインストールしています...");
   await $`mise install`;
@@ -37,10 +39,11 @@ if (import.meta.main) {
     await installWindows(roots);
   } else {
     await installBrew(roots);
-    if (Deno.build.os === "linux") await installLinuxSystem(roots, desktop);
+    if (Deno.build.os === "linux") await installLinuxSystem(roots, { desktop, dev });
 
     const os = Deno.build.os === "darwin" ? "macos" : "linux";
     await runCustomInstallers(roots, os, "custom.toml");
+    if (dev) await runCustomInstallers(roots, os, "custom-dev.toml");
     if (desktop) await runCustomInstallers(roots, os, "custom-desktop.toml");
 
     await buildCommands(repoRoot, home);

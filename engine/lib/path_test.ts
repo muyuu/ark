@@ -16,7 +16,9 @@ async function withHome(fn: (home: string) => Promise<void>): Promise<void> {
 
 Deno.test("setupPath: brew があれば shellenv と mise を .bashrc に置く", async () => {
   await withHome(async (home) => {
-    await setupPath(home, quiet, (bin) => bin === "/opt/homebrew/bin/brew");
+    // パスは OS の区切り文字で組み立てる（detectBrewPrefix が join を使うため）。
+    const brewBin = join("/opt/homebrew", "bin", "brew");
+    await setupPath(home, quiet, (bin) => bin === brewBin);
 
     const bashrc = await Deno.readTextFile(join(home, ".bashrc"));
     assertEquals(bashrc.includes("/opt/homebrew/bin/brew shellenv"), true);

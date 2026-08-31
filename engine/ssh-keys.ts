@@ -1,6 +1,6 @@
 import { dirname, fromFileUrl, join } from "@std/path";
 import { $ } from "@david/dax";
-import { layerRoots } from "./lib/overlay.ts";
+import { layers } from "./lib/layer.ts";
 import { GITHUB_KEY_DECL } from "./lib/github.ts";
 import {
   ensureHostBlock,
@@ -23,10 +23,11 @@ const OVERLAY_KEYS_FILE = "ssh-keys.toml";
 async function collectKeyDecls(repoRoot: string, homeDir: string): Promise<KeyDecl[]> {
   const machine = await loadKeyDecls(keysConfigPath(homeDir));
 
-  const [, ...overlayRoots] = await layerRoots(repoRoot, homeDir);
+  // 先頭は core。ssh-keys.toml は overlay だけが持つ（core は既定の 1 本しか持たない）。
+  const overlayLayers = (await layers(repoRoot, homeDir)).slice(1);
   const overlays: KeyDecl[][] = [];
-  for (const root of overlayRoots) {
-    overlays.push(await loadKeyDecls(join(root, OVERLAY_KEYS_FILE)));
+  for (const layer of overlayLayers) {
+    overlays.push(await loadKeyDecls(join(layer.root, OVERLAY_KEYS_FILE)));
   }
 
   return mergeKeyDecls([GITHUB_KEY_DECL], machine, ...overlays);

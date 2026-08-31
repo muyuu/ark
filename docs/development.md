@@ -24,6 +24,7 @@ ark lint    # deno lint
 | 入口         | `bootstrap.sh` / `bootstrap.ps1` | toolchain を用意して engine に渡すだけ。ロジックを増やさない |
 | 実行エントリ | `engine/*.ts`                    | `import.meta.main` で引数と環境変数を読むだけの薄い層        |
 | ロジック     | `engine/lib/**`                  | OS 非依存は直下、OS 固有は `linux/` `macos/` `windows/`      |
+| layer        | `engine/lib/layer.ts`            | core → overlay の合成順と宣言の読み出しを持つ唯一の場所      |
 | 宣言         | `app/` `config/` `command/`      | データ。engine から見ると入力                                |
 
 engine の関数は「文字列を解釈する純関数」と「副作用を起こす関数」を分けてあり、テストは前者に付く
@@ -53,3 +54,18 @@ commit SHA で固定してあり、更新するときは SHA と末尾のバー�
 ## リリース
 
 タグもバージョンも無い。`main` が唯一の真実で、各マシンは `ark update` で追従する。
+
+## layer を横断して宣言を読む
+
+宣言は core → overlay の順に重なる。読み出しは `engine/lib/layer.ts` に集約してあるので、
+パスを自分で組み立てない。
+
+```ts
+const found = await layers(repoRoot, home); // core → overlay の合成順
+const ids = await collect(found, "app/windows/winget_cli", parseWingetfile); // 連結
+const text = await readManifest(layer, "app/linux/packages"); // 1 layer 分
+const paths = await existingManifestPaths(found, "app/common/Brewfile"); // 実在する物のパス
+```
+
+`Layer` は `name`（`core` / overlay 名）と `root` を持つ。警告に層の名前を出せるので、overlay 側の
+宣言が効いていないことに気づける。

@@ -1,23 +1,17 @@
-import { join } from "@std/path";
+import { collect, type Layer } from "../layer.ts";
 import { log } from "../logger.ts";
-import { readTextOr } from "../fs.ts";
 import { installWinget, parseWingetfile, upgradeAllWinget } from "./winget.ts";
 
 /**
  * native Windows のセットアップ。まず winget 管理下の全パッケージを最新版へ更新し、続いて CLI
  * （user スコープ）と GUI（machine スコープ・要管理者）を `app/windows` の宣言リストから導入する。
  *
- * roots は core → overlay の合成順。各 layer の winget_cli / winget_gui を読み合わせて導入する
- * （存在しないものは空として扱う）。winget に無い野良アプリは個別インストーラで別途扱う。
+ * 各 layer の winget_cli / winget_gui を合成順に読み合わせて導入する
+ * （存在しないものは空として扱う）。winget に無い野良アプリは custom で別途扱う。
  */
-export async function installWindows(roots: string[]): Promise<void> {
-  const cli: string[] = [];
-  const gui: string[] = [];
-  for (const root of roots) {
-    const windowsDir = join(root, "app", "windows");
-    cli.push(...parseWingetfile(await readTextOr(join(windowsDir, "winget_cli"), "")));
-    gui.push(...parseWingetfile(await readTextOr(join(windowsDir, "winget_gui"), "")));
-  }
+export async function installWindows(layers: Layer[]): Promise<void> {
+  const cli = await collect(layers, "app/windows/winget_cli", parseWingetfile);
+  const gui = await collect(layers, "app/windows/winget_gui", parseWingetfile);
 
   log.info("🪟 winget 管理下のパッケージを最新化します...");
   await upgradeAllWinget();

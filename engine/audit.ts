@@ -2,8 +2,7 @@ import { dirname, fromFileUrl, join } from "@std/path";
 import { $ } from "@david/dax";
 import { missingFromManifest, parseBrewfileEntries, parseLines } from "./lib/audit.ts";
 import { parseFlatpakfile } from "./lib/linux/flatpak.ts";
-import { layerRoots } from "./lib/overlay.ts";
-import { readTextOr } from "./lib/fs.ts";
+import { collect, layers } from "./lib/layer.ts";
 import { log } from "./lib/logger.ts";
 
 // マニフェストに書き忘れたままインストールした物を棚卸しする。core + overlay の宣言を横断し、
@@ -18,40 +17,37 @@ function report(label: string, extras: string[]): boolean {
 if (import.meta.main) {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..");
   const home = Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE") ?? "";
-  const roots = await layerRoots(repoRoot, home);
+  const found = await layers(repoRoot, home);
 
-  let found = false;
+  let unregistered = false;
 
   if (await $.commandExists("brew")) {
     const formulae: string[] = [];
     const casks: string[] = [];
-    for (const root of roots) {
-      for (const file of ["app/common/Brewfile", "app/macos/Brewfile"]) {
-        const parsed = parseBrewfileEntries(await readTextOr(join(root, file), ""));
-        formulae.push(...parsed.formulae);
-        casks.push(...parsed.casks);
+    for (const file of ["app/common/Brewfile", "app/macos/Brewfile"]) {
+      const parsed = await collect(found, file, (text) => [parseBrewfileEntries(text)]);
+      for (const entry of parsed) {
+        formulae.push(...entry.formulae);
+        casks.push(...entry.casks);
       }
     }
 
     const leaves = parseLines(await $`brew leaves`.noThrow().text());
     const installedCasks = parseLines(await $`brew list --cask`.noThrow().text());
 
-    found = report("brew", missingFromManifest(leaves, formulae)) || found;
-    found = report("cask", missingFromManifest(installedCasks, casks)) || found;
+    unregistered = report("brew", missingFromManifest(leaves, formulae)) || unregistered;
+    unregistered = report("cask", missingFromManifest(installedCasks, casks)) || unregistered;
   }
 
   if (Deno.build.os === "linux" && await $.commandExists("flatpak")) {
-    const declared: string[] = [];
-    for (const root of roots) {
-      declared.push(...parseFlatpakfile(await readTextOr(join(root, "app/linux/flatpak"), "")));
-    }
+    const declared = await collect(found, "app/linux/flatpak", parseFlatpakfile);
     const installed = parseLines(
       await $`flatpak list --app --columns=application`.noThrow().text(),
     );
-    found = report("flatpak", missingFromManifest(installed, declared)) || found;
+    unregistered = report("flatpak", missingFromManifest(installed, declared)) || unregistered;
   }
 
-  if (found) {
+  if (unregistered) {
     log.info("→ 残したい物は app/ のマニフェスト（または overlay）に追記してください。");
   } else {
     log.success("✅ マニフェスト未登録のインストール済みパッケージはありません");

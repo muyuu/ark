@@ -1,4 +1,5 @@
-import { join } from "@std/path";
+import type { Layer } from "./layer.ts";
+import { manifestPath } from "./layer.ts";
 import { log } from "./logger.ts";
 
 /** 旧名 → 現在の名前。名前が変わった manifest を、読まれないまま放置しないために持つ。 */
@@ -14,7 +15,7 @@ export function renamedManifests(
   root: string,
   exists: (path: string) => boolean,
 ): Array<{ old: string; now: string }> {
-  return RENAMED.filter((entry) => exists(join(root, ...entry.old.split("/"))));
+  return RENAMED.filter((entry) => exists(manifestPath({ name: "", root }, entry.old)));
 }
 
 function existsSync(path: string): boolean {
@@ -33,10 +34,10 @@ function existsSync(path: string): boolean {
  * 名前が変わった manifest は黙って読まれなくなる。core は追従できるが overlay は別リポなので、
  * 気づかないまま宣言が効かなくなるのを防ぐ。
  */
-export function warnRenamedManifests(roots: string[]): void {
-  for (const root of roots) {
-    for (const { old, now } of renamedManifests(root, existsSync)) {
-      log.warning(`⚠️ ${join(root, old)} は読まれません（${now} に名前が変わりました）`);
+export function warnRenamedManifests(layers: Layer[]): void {
+  for (const layer of layers) {
+    for (const { old, now } of renamedManifests(layer.root, existsSync)) {
+      log.warning(`⚠️ [${layer.name}] ${old} は読まれません（${now} に名前が変わりました）`);
     }
   }
 }

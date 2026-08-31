@@ -27,12 +27,18 @@ export function parseCustomList(content: string): string[] {
 }
 
 /**
- * 各 layer の `app/<os>/custom` に宣言された custom installer を合成順に実行する。
+ * 各 layer の `app/<os>/<manifest>` に宣言された custom installer を合成順に実行する。
  * 未知の名前は警告してスキップする。各 installer は冪等（導入済みなら何もしない）。
+ *
+ * manifest は環境の層に対応する: `custom` は常に、`custom-gui` はデスクトップ環境でだけ実行する。
  */
-export async function runCustomInstallers(roots: string[], os: string): Promise<void> {
+export async function runCustomInstallers(
+  roots: string[],
+  os: string,
+  manifest: string,
+): Promise<void> {
   for (const root of roots) {
-    const names = parseCustomList(await readTextOr(join(root, "app", os, "custom"), ""));
+    const names = parseCustomList(await readTextOr(join(root, "app", os, manifest), ""));
     for (const name of names) {
       const installer = INSTALLERS[name];
       if (!installer) {

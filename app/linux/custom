@@ -1,12 +1,10 @@
 # ==================================================
-# Linux custom インストーラ（GUI 環境のみ）
+# Linux custom インストーラ（常に実行）
 # ==================================================
 # PM に無い、または distro 横断で導入経路が異なるアプリを engine の個別インストーラ名で宣言する。
-# 実体は engine/lib/linux/。GUI を持つ環境にだけ適用する（WSL / headless では実行しない）。
+# 実体は engine/lib/linux/custom/。
+# ここは開発に要るもの。デスクトップ環境でしか意味の無いものは custom-gui を参照。
 # ==================================================
-
-# ターミナル
-ghostty # Arch・Fedora=PM / Debian 系は公式リポジトリに入るまで community PPA
 
 # エディタ
 zed     # IDE はホスト連携が要るので flatpak でなくネイティブ。Arch=PM / Debian・Fedora=公式 install スクリプト

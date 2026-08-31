@@ -8,7 +8,6 @@ import { cleanupCommands, installArgs, updateCommands } from "./package-manager.
 import { registerGpgKeys } from "./gpg-keys.ts";
 import { setupFlatpak } from "./flatpak.ts";
 import { runDistroPostInstall } from "./post-install.ts";
-import { isWsl } from "./wsl.ts";
 
 function existsSync(path: string): boolean {
   try {
@@ -67,18 +66,17 @@ async function runAll(commands: string[][]): Promise<void> {
 
 /**
  * Linux 固有のシステム層をセットアップする。distro の package manager で system パッケージを、
- * GUI 環境では GUI パッケージと Flatpak を導入し、キー登録・後処理も行う。
+ * デスクトップ環境ではデスクトップ向けパッケージと Flatpak を導入し、キー登録・後処理も行う。
  *
  * Homebrew / CLI ツール（Brewfile）は OS によらず installBrew が所有するためここでは扱わない。
  *
- * GUI 層（gui パッケージ / Flatpak）は GUI を持つ環境にだけ入れる。WSL は headless（GUI はホスト
- * Windows 側）なので GUI 層をスキップする。
+ * デスクトップ層（gui パッケージ / Flatpak）はデスクトップ環境にだけ入れる。WSL はデスクトップとして
+ * 使わない（ブラウザや IME はホストの Windows 側）ので対象外。判定は呼び出し側が行う。
  */
-export async function installLinuxSystem(roots: string[]): Promise<void> {
+export async function installLinuxSystem(roots: string[], desktop: boolean): Promise<void> {
   const dirs = linuxDirs(roots);
 
-  const gui = !isWsl();
-  if (!gui) log.info("WSL を検出: GUI 層はスキップします");
+  if (!desktop) log.info("デスクトップ環境ではないため、デスクトップ層はスキップします");
 
   const distro = detectDistro(existsSync);
   if (!distro) {
@@ -97,7 +95,7 @@ export async function installLinuxSystem(roots: string[]): Promise<void> {
     await installManifest(dir, distro.name, distro.packageManager, "packages");
   }
 
-  if (gui) {
+  if (desktop) {
     for (const dir of dirs) {
       await installManifest(dir, distro.name, distro.packageManager, "gui");
     }

@@ -18,3 +18,13 @@ export function isWsl(): boolean {
   }
   return false;
 }
+
+/**
+ * `command -v` が返したパスが Linux ネイティブの導入か。
+ *
+ * WSL は interop で Windows 側の実行ファイル（`/mnt/c/…` の exe）も PATH に載せる。導入済み
+ * 判定にそのまま使うと、Linux 側に何も入っていないのに「導入済み」と見えてしまう。
+ */
+export function isNativeCommand(resolvedPath: string): boolean {
+  return resolvedPath !== "" && !resolvedPath.startsWith("/mnt/");
+}

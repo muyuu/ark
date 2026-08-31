@@ -3,9 +3,20 @@ import { linkDotfiles, type LinkPlan } from "./dotfiles.ts";
 import { layerRoots } from "./overlay.ts";
 import { log } from "./logger.ts";
 
-// native Windows で実際に読まれる設定だけに絞る（git は %USERPROFILE%\.gitconfig、
-// tig は Git Bash が ~/.config/tig を読む）。nvim は Zed 利用で不要、zsh は native では無意味。
-const WINDOWS_DOTFILES = new Set([".gitconfig", ".config/tig"]);
+// native Windows で実際に読まれる設定だけに絞る。`/` で終わる項目はその配下すべてを指す。
+// zsh は native では無意味、nvim は %LOCALAPPDATA%\nvim を読むのでここには含めない。
+const WINDOWS_DOTFILES = [
+  ".gitconfig", // %USERPROFILE%\.gitconfig
+  ".config/tig", // Git Bash が ~/.config/tig を読む
+  ".claude/", // Claude Code (Windows) が %USERPROFILE%\.claude を読む
+];
+
+/** $HOME からの相対パス（`/` 区切り）が native Windows で展開する対象か。 */
+export function isWindowsDotfile(relativePath: string): boolean {
+  return WINDOWS_DOTFILES.some((entry) =>
+    entry.endsWith("/") ? relativePath.startsWith(entry) : relativePath === entry
+  );
+}
 
 function dirExists(path: string): boolean {
   try {
@@ -22,7 +33,7 @@ function dirExists(path: string): boolean {
  */
 export async function linkAllLayers(repoRoot: string, homeDir: string): Promise<void> {
   const onlyWindows = (p: LinkPlan) =>
-    WINDOWS_DOTFILES.has(relative(homeDir, p.target).replaceAll("\\", "/"));
+    isWindowsDotfile(relative(homeDir, p.target).replaceAll("\\", "/"));
   const filter = Deno.build.os === "windows" ? onlyWindows : undefined;
 
   for (const root of await layerRoots(repoRoot, homeDir)) {

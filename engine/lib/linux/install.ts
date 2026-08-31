@@ -1,7 +1,7 @@
-import { join } from "@std/path";
+import { type Layer, manifestPath, readManifest } from "../layer.ts";
 import { $ } from "@david/dax";
 import { log } from "../logger.ts";
-import { readTextOr } from "../fs.ts";
+
 import { detectDistro, type DistroName, type PackageManager } from "./distro.ts";
 import { mapPackageNames, parsePackageMap, parseSystemPackages } from "./packages.ts";
 import { cleanupCommands, installArgs, installEach, updateCommands } from "./package-manager.ts";
@@ -35,23 +35,23 @@ async function sudoPmOk(argv: string[]): Promise<boolean> {
 
 /** その layer の distro マップ（論理名→実パッケージ名）を読む。無ければ空。 */
 async function loadDistroMap(
-  linuxDir: string,
+  layer: Layer,
   distroName: DistroName,
 ): Promise<Map<string, string[]>> {
-  return parsePackageMap(await readTextOr(join(linuxDir, "distro", `${distroName}.map`), ""));
+  return parsePackageMap(await readManifest(layer, `app/linux/distro/${distroName}.map`));
 }
 
-/** distro PM 用のパッケージ manifest（packages / desktop）を論理名→実名に変換して導入する。 */
+/** distro PM 用のパッケージ manifest（packages / server / dev / desktop）を論理名→実名に変換して導入する。 */
 async function installManifest(
-  linuxDir: string,
+  layer: Layer,
   distroName: DistroName,
   pm: PackageManager,
   manifest: string,
 ): Promise<void> {
-  const content = await readTextOr(join(linuxDir, manifest), "");
+  const content = await readManifest(layer, `app/linux/${manifest}`);
   if (!content) return;
 
-  const map = await loadDistroMap(linuxDir, distroName);
+  const map = await loadDistroMap(layer, distroName);
   const packages = parseSystemPackages(content).flatMap((name) => mapPackageNames(map, name));
   if (packages.length === 0) return;
 
@@ -61,11 +61,6 @@ async function installManifest(
     log.warning(`⚠️ ${name} を導入できませんでした（スキップ）`);
     report.record(pm, name);
   }
-}
-
-/** 各 layer の app/linux ディレクトリ（存在するかは各処理側で判定）。 */
-function linuxDirs(roots: string[]): string[] {
-  return roots.map((root) => join(root, "app", "linux"));
 }
 
 /** システム更新・掃除のコマンド列。1 つ失敗しても以降と後続の処理は続ける。 */
@@ -80,7 +75,7 @@ async function runAll(label: string, commands: string[][]): Promise<void> {
 
 /**
  * Linux 固有のシステム層をセットアップする。distro の package manager で system パッケージを、
- * デスクトップ環境ではデスクトップ向けパッケージと Flatpak を導入し、キー登録・後処理も行う。
+ * 用途に応じた層のパッケージと Flatpak を導入し、キー登録・後処理も行う。
  *
  * Homebrew / CLI ツール（Brewfile）は OS によらず installBrew が所有するためここでは扱わない。
  *
@@ -88,11 +83,9 @@ async function runAll(label: string, commands: string[][]): Promise<void> {
  * （desktop / Flatpak）を用途に応じて重ねる。サーバ層と開発層は排他。判定は呼び出し側が行う。
  */
 export async function installLinuxSystem(
-  roots: string[],
+  layers: Layer[],
   tiers: { desktop: boolean; dev: boolean; server: boolean },
 ): Promise<void> {
-  const dirs = linuxDirs(roots);
-
   if (tiers.server) log.info("サーバを検出: 開発層とデスクトップ層はスキップします");
   else if (!tiers.desktop) log.info("デスクトップ環境ではないため、デスクトップ層はスキップします");
 
@@ -108,32 +101,27 @@ export async function installLinuxSystem(
   await runAll("distro update", updateCommands(distro.packageManager));
 
   if (distro.name === "debian") {
-    for (const dir of dirs) await registerGpgKeys(join(dir, "distro", "gpg-keys.txt"));
-  }
-
-  for (const dir of dirs) {
-    await installManifest(dir, distro.name, distro.packageManager, "packages");
-  }
-
-  if (tiers.server) {
-    for (const dir of dirs) {
-      await installManifest(dir, distro.name, distro.packageManager, "server");
+    for (const layer of layers) {
+      await registerGpgKeys(manifestPath(layer, "app/linux/distro/gpg-keys.txt"));
     }
   }
 
-  if (tiers.dev) {
-    for (const dir of dirs) {
-      await installManifest(dir, distro.name, distro.packageManager, "dev");
+  // 最小層 → 用途別の層の順に、それぞれ全 layer を合成順で適用する。
+  const manifests = ["packages"];
+  if (tiers.server) manifests.push("server");
+  if (tiers.dev) manifests.push("dev");
+  if (tiers.desktop) manifests.push("desktop");
+
+  for (const manifest of manifests) {
+    for (const layer of layers) {
+      await installManifest(layer, distro.name, distro.packageManager, manifest);
     }
   }
 
   if (tiers.desktop) {
-    for (const dir of dirs) {
-      await installManifest(dir, distro.name, distro.packageManager, "desktop");
-    }
-    for (const dir of dirs) {
-      const map = await loadDistroMap(dir, distro.name);
-      await setupFlatpak(distro.packageManager, join(dir, "flatpak"), map);
+    for (const layer of layers) {
+      const map = await loadDistroMap(layer, distro.name);
+      await setupFlatpak(distro.packageManager, manifestPath(layer, "app/linux/flatpak"), map);
     }
   }
 

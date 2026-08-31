@@ -1,6 +1,5 @@
-import { join } from "@std/path";
 import { $ } from "@david/dax";
-import { readTextOr } from "./fs.ts";
+import { type Layer, readManifest } from "./layer.ts";
 import { log } from "./logger.ts";
 import { report } from "./report.ts";
 import {
@@ -138,14 +137,14 @@ async function installApp(app: CustomApp, distro: string | undefined): Promise<v
  * overlay も同じ宣言を持てる（engine のコードを持たない overlay でも、宣言で書ける物は足せる）。
  */
 export async function runCustomInstallers(
-  roots: string[],
+  layers: Layer[],
   os: string,
   manifest: string,
 ): Promise<void> {
   const distro = os === "linux" ? detectDistro(existsSync)?.name : os;
 
-  for (const root of roots) {
-    const apps = parseCustomApps(await readTextOr(join(root, "app", os, manifest), ""));
+  for (const layer of layers) {
+    const apps = parseCustomApps(await readManifest(layer, `app/${os}/${manifest}`));
     for (const app of apps) {
       try {
         await installApp(app, distro);

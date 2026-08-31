@@ -86,7 +86,7 @@ export async function loadOverlays(homeDir: string): Promise<Overlay[]> {
 }
 
 /** ghq の管理ルートを解決する（ghq があれば `ghq root`、無ければ git config の ghq.root、既定 ~/ghq）。 */
-async function resolveGhqRoot(homeDir: string): Promise<string> {
+export async function resolveGhqRoot(homeDir: string): Promise<string> {
   if (await $.commandExists("ghq")) {
     const r = (await $`ghq root`.noThrow().text()).trim();
     if (r) return r;
@@ -121,20 +121,6 @@ export async function syncOverlays(homeDir: string): Promise<string[]> {
       await $`git clone ${o.url} ${dir}`;
     }
     roots.push(dir);
-  }
-  return roots;
-}
-
-/**
- * core と取得済み overlay の layer ルートを合成順（core → 登録順）で返す。overlay は ghq ツリー上の
- * ローカルパスを指す。install / link はこの順で各層を処理し、後の層（overlay）が衝突時に勝つ。取得は行わない。
- */
-export async function layerRoots(repoRoot: string, homeDir: string): Promise<string[]> {
-  const root = await resolveGhqRoot(homeDir);
-  const roots = [repoRoot];
-  for (const o of await loadOverlays(homeDir)) {
-    const dir = ghqPath(root, o.url);
-    if (dir && await $.path(dir).exists()) roots.push(dir);
   }
   return roots;
 }

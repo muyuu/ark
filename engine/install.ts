@@ -6,7 +6,7 @@ import { runCustomInstallers } from "./lib/custom.ts";
 import { isDesktop, isDev, isServer } from "./lib/desktop.ts";
 import { installLinuxSystem } from "./lib/linux/install.ts";
 import { installWindows } from "./lib/windows/install.ts";
-import { layerRoots } from "./lib/overlay.ts";
+import { layers } from "./lib/layer.ts";
 import { warnRenamedManifests } from "./lib/legacy-manifest.ts";
 import { setupZsh } from "./lib/zsh.ts";
 import { log } from "./lib/logger.ts";
@@ -32,8 +32,8 @@ if (import.meta.main) {
     log.error("HOME / USERPROFILE が未設定です");
     Deno.exit(1);
   }
-  const roots = await layerRoots(repoRoot, home);
-  warnRenamedManifests(roots);
+  const found = await layers(repoRoot, home);
+  warnRenamedManifests(found);
   const desktop = isDesktop();
   const dev = isDev();
   const server = isServer();
@@ -42,16 +42,16 @@ if (import.meta.main) {
   await $`mise install`;
 
   if (Deno.build.os === "windows") {
-    await installWindows(roots);
+    await installWindows(found);
   } else {
-    await installBrew(roots);
-    if (Deno.build.os === "linux") await installLinuxSystem(roots, { desktop, dev, server });
+    await installBrew(found);
+    if (Deno.build.os === "linux") await installLinuxSystem(found, { desktop, dev, server });
 
     const os = Deno.build.os === "darwin" ? "macos" : "linux";
-    await runCustomInstallers(roots, os, "custom.toml");
-    if (server) await runCustomInstallers(roots, os, "custom-server.toml");
-    if (dev) await runCustomInstallers(roots, os, "custom-dev.toml");
-    if (desktop) await runCustomInstallers(roots, os, "custom-desktop.toml");
+    await runCustomInstallers(found, os, "custom.toml");
+    if (server) await runCustomInstallers(found, os, "custom-server.toml");
+    if (dev) await runCustomInstallers(found, os, "custom-dev.toml");
+    if (desktop) await runCustomInstallers(found, os, "custom-desktop.toml");
 
     await buildCommands(repoRoot, home);
     await setupZsh(home);

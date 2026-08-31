@@ -1,6 +1,6 @@
 import { join, relative } from "@std/path";
 import { linkDotfiles, type LinkPlan } from "./dotfiles.ts";
-import { layerRoots } from "./overlay.ts";
+import { layers } from "./layer.ts";
 import { log } from "./logger.ts";
 
 // native Windows で実際に読まれる設定だけに絞る。`/` で終わる項目はその配下すべてを指す。
@@ -36,8 +36,8 @@ export async function linkAllLayers(repoRoot: string, homeDir: string): Promise<
     isWindowsDotfile(relative(homeDir, p.target).replaceAll("\\", "/"));
   const filter = Deno.build.os === "windows" ? onlyWindows : undefined;
 
-  for (const root of await layerRoots(repoRoot, homeDir)) {
-    const configDir = join(root, "config");
+  for (const layer of await layers(repoRoot, homeDir)) {
+    const configDir = join(layer.root, "config");
     if (dirExists(configDir)) await linkDotfiles(configDir, homeDir, log, filter);
   }
 }

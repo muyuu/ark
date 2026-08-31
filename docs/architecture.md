@@ -70,17 +70,17 @@ WSL と native Windows の位置づけ:
 宣言は OS 別の manifest に置く（`common` は macOS/Linux 共通）。導入対象は OS と環境で決まり、環境は
 自動判定する（手動フラグは持たない）。層は 2 つ:
 
-| 層             | manifest                                             | 適用先               |
-| -------------- | ---------------------------------------------------- | -------------------- |
-| 常に           | `common` / `packages` / `custom.toml` / `winget_cli` | すべての環境         |
-| デスクトップ層 | `gui` / `flatpak` / `custom-gui.toml` / `winget_gui` | デスクトップ環境のみ |
+| 層             | manifest                                                     | 適用先               |
+| -------------- | ------------------------------------------------------------ | -------------------- |
+| 常に           | `common` / `packages` / `custom.toml` / `winget_cli`         | すべての環境         |
+| デスクトップ層 | `desktop` / `flatpak` / `custom-desktop.toml` / `winget_gui` | デスクトップ環境のみ |
 
 デスクトップ環境かどうかは「macOS・Windows なら常に真、Linux は WSL でなく、かつ表示先
 （`DISPLAY` / `WAYLAND_DISPLAY`）がある」で判定する。
 
 ### package manager に無いアプリ（custom）
 
-`custom.toml` / `custom-gui.toml` で宣言する。1 アプリ 1 エントリで、導入済み判定（`commands` / `paths`）と
+`custom.toml` / `custom-desktop.toml` で宣言する。1 アプリ 1 エントリで、導入済み判定（`commands` / `paths`）と
 distro ごとの導入方法を書く。
 
 ```toml

@@ -35,7 +35,7 @@ async function loadDistroMap(
   return parsePackageMap(await readTextOr(join(linuxDir, "distro", `${distroName}.map`), ""));
 }
 
-/** distro PM 用のパッケージ manifest（packages / gui）を論理名→実名に変換して導入する。 */
+/** distro PM 用のパッケージ manifest（packages / desktop）を論理名→実名に変換して導入する。 */
 async function installManifest(
   linuxDir: string,
   distroName: DistroName,
@@ -70,7 +70,7 @@ async function runAll(commands: string[][]): Promise<void> {
  *
  * Homebrew / CLI ツール（Brewfile）は OS によらず installBrew が所有するためここでは扱わない。
  *
- * デスクトップ層（gui パッケージ / Flatpak）はデスクトップ環境にだけ入れる。WSL はデスクトップとして
+ * デスクトップ層（desktop パッケージ / Flatpak）はデスクトップ環境にだけ入れる。WSL はデスクトップとして
  * 使わない（ブラウザや IME はホストの Windows 側）ので対象外。判定は呼び出し側が行う。
  */
 export async function installLinuxSystem(roots: string[], desktop: boolean): Promise<void> {
@@ -97,7 +97,7 @@ export async function installLinuxSystem(roots: string[], desktop: boolean): Pro
 
   if (desktop) {
     for (const dir of dirs) {
-      await installManifest(dir, distro.name, distro.packageManager, "gui");
+      await installManifest(dir, distro.name, distro.packageManager, "desktop");
     }
     for (const dir of dirs) {
       const map = await loadDistroMap(dir, distro.name);

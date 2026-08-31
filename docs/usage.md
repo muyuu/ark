@@ -31,10 +31,10 @@
 | CLI ツール（mac/Linux 共通）    | `app/common/Brewfile`                                                               |
 | macOS の GUI アプリ             | `app/macos/Brewfile` の `cask`                                                      |
 | Linux のシステム/CLI パッケージ | `app/linux/packages` ＋ 名前が違う distro は `app/linux/distro/<distro>.map`        |
-| Linux のデスクトップ向け        | `app/linux/gui`（同上）                                                             |
+| Linux のデスクトップ向け        | `app/linux/desktop`（同上）                                                         |
 | Linux の GUI アプリ（Flatpak）  | `app/linux/flatpak`                                                                 |
 | Windows のアプリ                | `app/windows/winget_cli`（CLI）/ `winget_gui`（GUI）                                |
-| PM に無い野良アプリ             | `app/<os>/custom.toml`（常に）/ `custom-gui.toml`（デスクトップのみ）               |
+| PM に無い野良アプリ             | `app/<os>/custom.toml`（常に）/ `custom-desktop.toml`（デスクトップのみ）           |
 | dotfile                         | `config/` 配下に置く（`.config` / `.claude` / `.zsh.d` は中身が個別にリンクされる） |
 | 自前コマンド                    | `command/<name>/`（`ark install` がビルドして `~/.local/bin` に置く）               |
 

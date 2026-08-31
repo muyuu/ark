@@ -7,6 +7,7 @@ import { isDesktop } from "./lib/desktop.ts";
 import { installLinuxSystem } from "./lib/linux/install.ts";
 import { installWindows } from "./lib/windows/install.ts";
 import { layerRoots } from "./lib/overlay.ts";
+import { warnRenamedManifests } from "./lib/legacy-manifest.ts";
 import { setupZsh } from "./lib/zsh.ts";
 import { log } from "./lib/logger.ts";
 
@@ -14,7 +15,7 @@ import { log } from "./lib/logger.ts";
  * 宣言（app/）を適用してパッケージを導入する。core と取得済み overlay を合成順に処理し、OS で導入経路を
  * 振り分ける: Windows は winget、それ以外は Homebrew（+ Linux は distro のシステム層）と自前コマンド・zsh 設定。
  *
- * デスクトップ層（`gui` / `flatpak` / `custom-gui.toml`）はデスクトップ環境にだけ適用する。WSL や headless は
+ * デスクトップ層（`desktop` / `flatpak` / `custom-desktop.toml`）はデスクトップ環境にだけ適用する。WSL や headless は
  * 開発環境なので、CLI/システム層と開発用の `custom` までを入れる。
  */
 if (import.meta.main) {
@@ -26,6 +27,7 @@ if (import.meta.main) {
     Deno.exit(1);
   }
   const roots = await layerRoots(repoRoot, home);
+  warnRenamedManifests(roots);
   const desktop = isDesktop();
 
   log.info("🔧 mise のツールをインストールしています...");
@@ -39,7 +41,7 @@ if (import.meta.main) {
 
     const os = Deno.build.os === "darwin" ? "macos" : "linux";
     await runCustomInstallers(roots, os, "custom.toml");
-    if (desktop) await runCustomInstallers(roots, os, "custom-gui.toml");
+    if (desktop) await runCustomInstallers(roots, os, "custom-desktop.toml");
 
     await buildCommands(repoRoot, home);
     await setupZsh(home);

@@ -3,16 +3,18 @@ import { log } from "../logger.ts";
 
 /**
  * 既存の crontab にエントリを重複なく追加した内容を返す。
- * コメント行・空行は落とし、同一エントリを含む行は除いてから末尾に追加する。
+ *
+ * 既存の行はコメント・空行・設定行（MAILTO 等）も含めてそのまま残す。crontab は ark の
+ * 管理外の内容も持つので、書き戻しで削ってよいものは無い。同じエントリが既にある場合だけ
+ * 追加を見送る（判定は行全体の一致。コメント中に同じ文字列があっても登録済みとはみなさない）。
  */
 export function buildCrontabWith(existing: string, entry: string): string {
-  const kept = existing
-    .split("\n")
-    .filter((line) => {
-      const trimmed = line.trim();
-      return trimmed.length > 0 && !trimmed.startsWith("#") && !line.includes(entry);
-    });
-  return [...kept, entry].join("\n") + "\n";
+  const lines = existing.split("\n");
+  // 末尾の改行が生む空要素は落とす（末尾の改行は最後に必ず付け直す）。
+  if (lines.at(-1) === "") lines.pop();
+
+  const registered = lines.some((line) => line.trim() === entry);
+  return [...lines, ...(registered ? [] : [entry])].join("\n") + "\n";
 }
 
 /**

@@ -1,5 +1,5 @@
 import { join } from "@std/path";
-import { detectBrewPrefix, ensureRcBlock } from "./rc.ts";
+import { detectBrewPrefix, ensureRcBlock, rcBlock } from "./rc.ts";
 import { log } from "./logger.ts";
 
 function pathExists(path: string): boolean {
@@ -12,11 +12,8 @@ function pathExists(path: string): boolean {
   }
 }
 
-const BREW_MARKER = "# >>> Homebrew shellenv <<<";
-const MISE_MARKER = "# >>> mise activate <<<";
-
 /**
- * .bashrc に Homebrew と mise の活性化設定を冪等に追記する。
+ * .bashrc に Homebrew と mise の活性化設定を冪等に置く。
  * bash から zsh へ橋渡しする際のフォールバック経路用。brew の導入先が見つからなければ失敗する。
  */
 export async function setupPath(homeDir: string): Promise<void> {
@@ -27,14 +24,18 @@ export async function setupPath(homeDir: string): Promise<void> {
     throw new Error("Homebrew のインストール先が見つかりません");
   }
 
-  const brewBlock =
-    `\n${BREW_MARKER}\neval "$(${prefix}/bin/brew shellenv)"\n# <<< Homebrew shellenv >>>\n`;
-  if (await ensureRcBlock(bashrc, BREW_MARKER, brewBlock)) {
-    log.info("🛠 .bashrc に Homebrew パス設定を追加しました");
+  const brew = rcBlock("# >>> Homebrew shellenv <<<", "# <<< Homebrew shellenv >>>", [
+    `eval "$(${prefix}/bin/brew shellenv)"`,
+  ]);
+  if (await ensureRcBlock(bashrc, brew)) {
+    log.info("🛠 .bashrc の Homebrew パス設定を更新しました");
   }
 
-  const miseBlock = `\n${MISE_MARKER}\neval "$(~/.local/bin/mise activate bash)"\n# <<< MISE >>>\n`;
-  if (await ensureRcBlock(bashrc, MISE_MARKER, miseBlock)) {
-    log.info("🛠 .bashrc に mise activate を追加しました");
+  // 終了マーカーが開始マーカーと揃っていないのは導入済みマシンに書かれている文字列に合わせるため。
+  const mise = rcBlock("# >>> mise activate <<<", "# <<< MISE >>>", [
+    'eval "$(~/.local/bin/mise activate bash)"',
+  ]);
+  if (await ensureRcBlock(bashrc, mise)) {
+    log.info("🛠 .bashrc の mise activate を更新しました");
   }
 }

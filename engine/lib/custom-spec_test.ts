@@ -50,7 +50,7 @@ Deno.test("parseCustomApps: install が無い宣言は engine の installer に�
 });
 
 Deno.test("selectInstallMethod: distro に対応する方法を選ぶ", () => {
-  const [zed, ghostty] = parseCustomApps(MANIFEST);
+  const [zed] = parseCustomApps(MANIFEST);
 
   assertEquals(selectInstallMethod(zed, "arch"), { package: "zed" });
 });

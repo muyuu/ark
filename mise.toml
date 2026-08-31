@@ -2,7 +2,9 @@
 
 [tools]
 deno = "latest"
-rust = "latest"
+# rust は stable チャンネルで追う。"latest" は mise が個別の版として解決するため、過去に
+# mise link で古い toolchain が結び付けられていると、RUSTUP_TOOLCHAIN でそれが固定され続ける。
+rust = "stable"
 
 # --- セットアップ / 運用 ---------------------------------------------------
 

@@ -61,6 +61,18 @@ async function forceSymlink(source: string, target: string): Promise<void> {
   await Deno.symlink(source, target);
 }
 
+/**
+ * cargo が古いときに何を直せばよいかのヒント。
+ *
+ * RUSTUP_TOOLCHAIN は rustup の既定より優先されるので、これが効いていると `rustup default` を
+ * 変えても解決しない。mise は管理下の rust をこの変数で固定するため、実際に踏みやすい。
+ */
+export function toolchainHint(rustupToolchain: string): string {
+  return rustupToolchain !== ""
+    ? `→ RUSTUP_TOOLCHAIN=${rustupToolchain} が効いています（rustup の既定より優先されます）。mise が指定しているなら mise.toml の rust を見直してください`
+    : "→ rustup を使っているなら `rustup default stable` で更新できます";
+}
+
 /** このマシンの cargo の版（取れなければ undefined）。 */
 async function cargoVersion(): Promise<string | undefined> {
   return parseCargoVersion(await $`mise exec -- cargo --version`.noThrow().text());
@@ -84,7 +96,8 @@ async function buildCargoCommand(
     log.warning(
       `⚠️ command/${name}: cargo ${cargo} は古すぎます（${required} 以上が必要）。ビルドをスキップします`,
     );
-    log.warning("   → rustup を使っているなら `rustup default stable` で更新できます");
+    const toolchain = (await $`mise exec -- printenv RUSTUP_TOOLCHAIN`.noThrow().text()).trim();
+    log.warning(`   ${toolchainHint(toolchain)}`);
     return false;
   }
 

@@ -1,5 +1,11 @@
 import { assertEquals } from "@std/assert";
-import { cargoBinName, cargoRustVersion, parseCargoVersion, satisfiesVersion } from "./command.ts";
+import {
+  cargoBinName,
+  cargoRustVersion,
+  parseCargoVersion,
+  satisfiesVersion,
+  toolchainHint,
+} from "./command.ts";
 
 Deno.test("cargoBinName: [[bin]].name を優先する", () => {
   const toml = '[package]\nname = "pkg"\n\n[[bin]]\nname = "wt"\npath = "src/main.rs"\n';
@@ -33,4 +39,15 @@ Deno.test("satisfiesVersion: 必要な版を満たすか（桁数が違っても
   assertEquals(satisfiesVersion("1.9.0", "1.78"), false);
   // 版が読めないときは止めない（判定できないことを理由にビルドを諦めない）
   assertEquals(satisfiesVersion(undefined, "1.78"), true);
+});
+
+Deno.test("toolchainHint: RUSTUP_TOOLCHAIN が効いていればそれを示す", () => {
+  const hint = toolchainHint("1.74.1");
+
+  assertEquals(hint.includes("RUSTUP_TOOLCHAIN=1.74.1"), true);
+  assertEquals(hint.includes("rustup default"), false);
+});
+
+Deno.test("toolchainHint: 固定が無ければ rustup の更新を案内する", () => {
+  assertEquals(toolchainHint("").includes("rustup default stable"), true);
 });

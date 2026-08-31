@@ -25,6 +25,8 @@ export async function installAndroidStudio(): Promise<void> {
   await $`wget -O ${archive} ${ANDROID_STUDIO_URL}`;
   await $`sudo tar -xzf ${archive} -C /opt`;
   await Deno.remove(archive);
-  await $`/opt/android-studio/bin/studio.sh`;
-  log.info("Android Studio を導入しました。PATH への追加が必要な場合があります");
+  // 初回のセットアップウィザードはここでは起動しない。GUI が閉じられるまで install 全体が止まるため。
+  log.info(
+    "Android Studio を展開しました。初回起動は /opt/android-studio/bin/studio.sh から行ってください",
+  );
 }

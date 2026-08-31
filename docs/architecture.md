@@ -70,16 +70,43 @@ WSL と native Windows の位置づけ:
 宣言は OS 別の manifest に置く（`common` は macOS/Linux 共通）。導入対象は OS と環境で決まり、環境は
 自動判定する（手動フラグは持たない）。層は 2 つ:
 
-| 層             | manifest                                        | 適用先               |
-| -------------- | ----------------------------------------------- | -------------------- |
-| 常に           | `common` / `packages` / `custom` / `winget_cli` | すべての環境         |
-| デスクトップ層 | `gui` / `flatpak` / `custom-gui` / `winget_gui` | デスクトップ環境のみ |
+| 層             | manifest                                             | 適用先               |
+| -------------- | ---------------------------------------------------- | -------------------- |
+| 常に           | `common` / `packages` / `custom.toml` / `winget_cli` | すべての環境         |
+| デスクトップ層 | `gui` / `flatpak` / `custom-gui.toml` / `winget_gui` | デスクトップ環境のみ |
 
 デスクトップ環境かどうかは「macOS・Windows なら常に真、Linux は WSL でなく、かつ表示先
 （`DISPLAY` / `WAYLAND_DISPLAY`）がある」で判定する。
 
-winget/Store に載らない「野良」アプリは段階で扱う: ①宣言（manifest）→ ②custom（engine の個別インストーラ・
-現状すべてデスクトップアプリなので GUI 環境のみ実行）→ ③manual-tracked（記録のみ・audit で欠落検知）。
+### package manager に無いアプリ（custom）
+
+`custom.toml` / `custom-gui.toml` で宣言する。1 アプリ 1 エントリで、導入済み判定（`commands` / `paths`）と
+distro ごとの導入方法を書く。
+
+```toml
+[[app]]
+name = "zed"
+commands = ["zed", "zeditor"]
+
+  [app.install.arch]
+  package = "zed"
+
+  [app.install.default]
+  script = "https://zed.dev/install.sh"
+```
+
+導入方法は 3 つ。`install.<distro>` に該当が無ければ `install.default` に落ち、それも無ければその distro
+では入れない。
+
+| 方法               | 意味                                                                                          |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| `package`          | distro の package manager で入れる。`ppa` を添えると、apt に候補が無いときだけ先に PPA を足す |
+| `script`           | 公式インストールスクリプトを `curl \| sh` で流す                                              |
+| `tarball` + `dest` | tarball を取得して展開先（既定 `/opt`）に置く                                                 |
+
+これで書けない手順（配布ページの解析やパッチ当てなど）は engine が installer を持つ。その場合は `name`
+だけを宣言して `install` を書かない（例: REAPER）。宣言にも engine にも載らないアプリは manual-tracked
+（記録のみ・audit で欠落検知）にする。
 
 ## dotfiles（config/）
 

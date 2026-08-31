@@ -12,6 +12,10 @@ rust = "stable"
 description = "app/ の宣言を適用してパッケージを導入する（--strict で失敗があれば 0 以外で終了）"
 run = "deno run -A engine/install.ts"
 
+[tasks.doctor]
+description = "宣言にあるのに実機で効いていない物を探す（変更はしない）"
+run = "deno run -A engine/doctor.ts"
+
 [tasks.audit]
 description = "宣言（app/・overlay 含む）に無いのに導入済みのパッケージを棚卸しする（変更はしない）"
 run = "deno run -A engine/audit.ts"

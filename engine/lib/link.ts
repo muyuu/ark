@@ -1,5 +1,5 @@
 import { join, relative } from "@std/path";
-import { linkDotfiles, type LinkPlan } from "./dotfiles.ts";
+import { linkDotfiles, type LinkPlan, planLinks } from "./dotfiles.ts";
 import { layers } from "./layer.ts";
 import { log } from "./logger.ts";
 
@@ -27,14 +27,39 @@ function dirExists(path: string): boolean {
   }
 }
 
+function listDirReal(dir: string): string[] {
+  return [...Deno.readDirSync(dir)].map((entry) => entry.name);
+}
+
+/** native Windows では実際に読まれる物だけに絞る。他の OS では絞らない。 */
+function windowsFilter(homeDir: string): ((plan: LinkPlan) => boolean) | undefined {
+  if (Deno.build.os !== "windows") return undefined;
+  return (plan) => isWindowsDotfile(relative(homeDir, plan.target).replaceAll("\\", "/"));
+}
+
+/**
+ * 全 layer ぶんの symlink 計画を、実際には張らずに算出する。
+ * doctor が「宣言どおりに張られているか」を見るのに使う。
+ */
+export async function plannedLinks(repoRoot: string, homeDir: string): Promise<LinkPlan[]> {
+  const filter = windowsFilter(homeDir) ?? (() => true);
+  const plans: LinkPlan[] = [];
+
+  for (const layer of await layers(repoRoot, homeDir)) {
+    const configDir = join(layer.root, "config");
+    if (dirExists(configDir)) {
+      plans.push(...planLinks(configDir, homeDir, listDirReal).filter(filter));
+    }
+  }
+  return plans;
+}
+
 /**
  * core → overlay の順に各 layer の `config/` を `$HOME` へ symlink で展開する。
  * マージ対象ディレクトリは後の層が同名を上書きする。native Windows では実際に読まれる物だけに絞る。
  */
 export async function linkAllLayers(repoRoot: string, homeDir: string): Promise<void> {
-  const onlyWindows = (p: LinkPlan) =>
-    isWindowsDotfile(relative(homeDir, p.target).replaceAll("\\", "/"));
-  const filter = Deno.build.os === "windows" ? onlyWindows : undefined;
+  const filter = windowsFilter(homeDir);
 
   for (const layer of await layers(repoRoot, homeDir)) {
     const configDir = join(layer.root, "config");

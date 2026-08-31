@@ -25,6 +25,7 @@ ark は macOS / Linux（WSL）/ native Windows それぞれのマシン構成を
 3 OS とも「唯一の shell 入口が toolchain だけ用意し、以降は engine（Deno + TS）へ委譲する」薄い形。
 
 - 入口: macOS/Linux `curl … | bash`、Windows `irm … | iex`。core は public なので取得に認証は要らない。
+- **サーバでは Homebrew を入れない**（表示先の無い Linux を検出して飛ばす）。CLI ツールは開発機だけの層。
 - **対話プロンプトは `< /dev/tty` から読む**（`curl … | bash` は stdin がパイプで対話入力を奪うため）。
   tty が無い環境（CI 等）は非対話フォールバックへ落ちる。
 
@@ -66,7 +67,7 @@ WSL・native Windows・サーバの位置づけ:
   便利 CLI は WSL 側で使う。dotfiles は native Windows で実際に読まれる物だけを展開する。
 - **Linux サーバ（VPS）ではホストの構成を持たない。** OS の設定・ファイアウォール・Docker・鍵の配布は
   [keel](https://github.com/muyuu/keel)（Ansible）が持ち、ark は操作者の環境（dotfiles と、ssh して
-  中を見て git を触るための最小パッケージ）だけを見る。ark を呼ぶのも keel。brew は入れない。
+  中を見て git を触るための最小パッケージ）だけを見る。ark を呼ぶのも keel。brew も入れない——bootstrap が表示先の無い Linux を検出して飛ばす。
 - ark 自身の `command/`（Rust）は unix API を使うため native Windows ではビルドしない。
 
 ## パッケージ（app/）

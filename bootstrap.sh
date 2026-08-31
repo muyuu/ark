@@ -50,8 +50,21 @@ fi
 
 cd "$ARK_DIR"
 
+# サーバ（表示先の無い Linux。WSL は除く）には Homebrew を入れない。CLI ツールは開発機だけの層で、
+# サーバは distro PM の最小限で足りる（docs/architecture.md のサポート範囲を参照）。
+# 判定は engine の isServerEnv と同じ条件を shell で書いたもの。
+is_server() {
+  [ "$(uname)" = "Linux" ] || return 1
+  if [ -f /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
+    return 1
+  fi
+  [ -z "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]
+}
+
 # Homebrew
-if ! command -v brew >/dev/null 2>&1; then
+if is_server; then
+  echo "🖥 サーバを検出しました。Homebrew は入れません"
+elif ! command -v brew >/dev/null 2>&1; then
   echo "🍺 Homebrew をインストールします..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi

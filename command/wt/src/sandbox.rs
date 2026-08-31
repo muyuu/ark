@@ -271,12 +271,26 @@ pub fn sync(env: &Env, name: &str) -> Result<()> {
     let remote_ok = if has_remote {
         proc::run_quiet(
             "git",
-            ["-C", env.main.as_str(), "remote", "set-url", remote.as_str(), url.as_str()],
+            [
+                "-C",
+                env.main.as_str(),
+                "remote",
+                "set-url",
+                remote.as_str(),
+                url.as_str(),
+            ],
         )
     } else {
         proc::run_quiet(
             "git",
-            ["-C", env.main.as_str(), "remote", "add", remote.as_str(), url.as_str()],
+            [
+                "-C",
+                env.main.as_str(),
+                "remote",
+                "add",
+                remote.as_str(),
+                url.as_str(),
+            ],
         )
     };
     if !remote_ok {
@@ -295,7 +309,13 @@ pub fn sync(env: &Env, name: &str) -> Result<()> {
 fn remove_sync_remote(env: &Env, name: &str) {
     proc::run_quiet(
         "git",
-        ["-C", env.main.as_str(), "remote", "remove", &format!("box-{name}")],
+        [
+            "-C",
+            env.main.as_str(),
+            "remote",
+            "remove",
+            &format!("box-{name}"),
+        ],
     );
 }
 

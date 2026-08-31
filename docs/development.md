@@ -42,6 +42,12 @@ engine の関数は「文字列を解釈する純関数」と「副作用を起�
   package manager に渡り、存在しなければその distro の導入が丸ごと失敗する。
 - **秘匿情報・業務情報は core に置かない。** overlay 側に置く（[decisions.md](./decisions.md)）。
 
+## CI
+
+PR ごとに `.github/workflows/ci.yml` が engine（Linux / Windows）・`command/wt`・bootstrap スクリプトを
+チェックする。ローカルで `ark test` などを流し忘れてもここで止まる。GitHub Actions の action は
+commit SHA で固定してあり、更新するときは SHA と末尾のバージョンコメントの両方を差し替える。
+
 ## リリース
 
 タグもバージョンも無い。`main` が唯一の真実で、各マシンは `ark update` で追従する。

@@ -7,6 +7,7 @@
 
 # 開発ツール
 vscode=code
+libasound2=libasound2t64   # Ubuntu 24.04 / Debian trixie の t64 移行で改名
 
 # フォント
 firacode=fonts-firacode

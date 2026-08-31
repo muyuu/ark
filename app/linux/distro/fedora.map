@@ -10,6 +10,7 @@ vscode=code
 build-essential=@development-tools
 libclang-dev=clang-devel
 pkg-config=pkgconf-pkg-config
+libasound2=alsa-lib
 
 # フォント
 firacode=fira-code-fonts

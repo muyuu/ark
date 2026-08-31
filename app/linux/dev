@@ -13,3 +13,9 @@ clang           # Clang コンパイラ
 libclang-dev    # libclang 開発ヘッダー
 cmake           # CMake
 pkg-config      # ネイティブビルドで必要
+
+# エディタのランタイム依存
+# Zed（custom-dev.toml でネイティブ導入）は ALSA を動的リンクする。デスクトップ層が入る
+# 実機では他のアプリ経由で揃うが、WSL は desktop 層をスキップするため、無いと zed が
+# `libasound.so.2` を見つけられず即終了する（`zed .` が無反応になる）。
+libasound2      # ALSA ランタイム

@@ -1,6 +1,6 @@
 import { $ } from "@david/dax";
 import { log } from "../logger.ts";
-import { report } from "../report.ts";
+import { InstallReport, report } from "../report.ts";
 import { readTextOr } from "../fs.ts";
 import type { PackageManager } from "./distro.ts";
 import { installArgs, purgeArgs } from "./package-manager.ts";
@@ -29,6 +29,32 @@ export function conflictingPackages(appIds: string[]): string[] {
 }
 
 /**
+ * 宣言された Flatpak アプリと競合するために削除すべき、実 distro パッケージ名のリスト。
+ * `conflictingPackages` の論理名を distro map で実名へ解決したもの（1 論理名が複数に割れることもある）。
+ */
+export function conflictPurgeList(appIds: string[], distroMap: Map<string, string[]>): string[] {
+  return conflictingPackages(appIds).flatMap((name) => mapPackageNames(distroMap, name));
+}
+
+/**
+ * Flatpak のセットアップに使う外部コマンド実行。テストから副作用を差し替えるために切り出す。
+ * `run` は失敗で例外（セットアップ工程）、`tryRun` は exit code を返す（個別アプリの導入）。
+ */
+export interface FlatpakShell {
+  hasFlatpak: () => Promise<boolean>;
+  run: (argv: string[]) => Promise<void>;
+  tryRun: (argv: string[]) => Promise<number>;
+}
+
+const systemShell: FlatpakShell = {
+  hasFlatpak: () => $.commandExists("flatpak"),
+  run: async (argv) => {
+    await $`${argv}`;
+  },
+  tryRun: async (argv) => (await $`${argv}`.noThrow()).code,
+};
+
+/**
  * Flatpak をセットアップして flatpak リストのアプリを導入する。
  * flatpak 未導入なら distro の package manager で入れ、Flathub を追加し、
  * 宣言されたアプリと競合する distro 版だけを削除してから flathub から各アプリを入れる。
@@ -39,29 +65,36 @@ export async function setupFlatpak(
   pm: PackageManager,
   flatpakfilePath: string,
   distroMap: Map<string, string[]>,
+  shell: FlatpakShell = systemShell,
+  rep: InstallReport = report,
 ): Promise<void> {
   const apps = parseFlatpakfile(await readTextOr(flatpakfilePath, ""));
   if (apps.length === 0) return;
 
-  if (!(await $.commandExists("flatpak"))) {
+  if (!(await shell.hasFlatpak())) {
     log.info("Flatpak をインストールします");
-    await $`sudo ${installArgs(pm, ["flatpak"])}`;
+    await shell.run(["sudo", ...installArgs(pm, ["flatpak"])]);
   }
 
-  await $`flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo`;
+  await shell.run([
+    "flatpak",
+    "remote-add",
+    "--if-not-exists",
+    "flathub",
+    "https://flathub.org/repo/flathub.flatpakrepo",
+  ]);
 
-  const conflicts = conflictingPackages(apps)
-    .flatMap((name) => mapPackageNames(distroMap, name));
+  const conflicts = conflictPurgeList(apps, distroMap);
   if (conflicts.length > 0) {
     log.info(`競合する distro 版を削除します: ${conflicts.join(", ")}`);
-    await $`sudo ${purgeArgs(pm, conflicts)}`.noThrow();
+    await shell.tryRun(["sudo", ...purgeArgs(pm, conflicts)]);
   }
 
   for (const app of apps) {
     log.info(`インストール中: ${app}`);
-    if ((await $`flatpak install -y flathub ${app}`.noThrow()).code !== 0) {
+    if ((await shell.tryRun(["flatpak", "install", "-y", "flathub", app])) !== 0) {
       log.warning(`⚠️ ${app} を導入できませんでした（スキップ）`);
-      report.record("flatpak", app);
+      rep.record("flatpak", app);
     }
   }
   log.success("Flatpak アプリのインストール完了");

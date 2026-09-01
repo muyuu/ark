@@ -1,6 +1,7 @@
 import { $ } from "@david/dax";
 import { log } from "../logger.ts";
 import { report } from "../report.ts";
+import { isElevated } from "./elevation.ts";
 
 /** wingetfile を winget ID のリストに解釈する。1 行 1 ID、`#` 以降と空行は無視する。 */
 export function parseWingetfile(content: string): string[] {
@@ -44,11 +45,24 @@ async function isInstalled(id: string): Promise<boolean> {
  *
  * 対象は winget 管理下の全アプリで、ark の宣言リストには限らない（brew upgrade -f と同じ広さ）。
  * バージョン不明のパッケージも対象にするため --include-unknown を付ける。個々の更新失敗で全体を
- * 止めないよう noThrow で流す。machine スコープのアプリは非管理者だと更新できず、その分はスキップされる。
+ * 止めないよう noThrow で流す。
+ *
+ * 非管理者のときは machine スコープのパッケージ（Git 等）を更新できず、winget が UAC を出しては
+ * 毎回失敗する。それを避けるため --disable-interactivity でプロンプトを抑え、machine スコープ分は
+ * 「管理者で再実行」を促して report に記録する（`mise run update` は通常こちらの経路）。
  */
 export async function upgradeAllWinget(): Promise<void> {
-  await $`winget upgrade --all --include-unknown --accept-source-agreements --accept-package-agreements`
+  const elevated = await isElevated();
+  const extra = elevated ? [] : ["--disable-interactivity"];
+  await $`winget upgrade --all --include-unknown --accept-source-agreements --accept-package-agreements ${extra}`
     .noThrow();
+  if (!elevated) {
+    log.warning(
+      "⚠️ machine スコープのパッケージ更新には管理者権限が要ります。更新するには管理者 PowerShell で" +
+        "リポジトリ直下から `mise run update` を再実行してください（user スコープ分は更新済み）",
+    );
+    report.record("winget upgrade", "machine スコープ（非管理者のためスキップ）");
+  }
 }
 
 async function wingetInstall(id: string, scope?: "machine" | "user"): Promise<boolean> {

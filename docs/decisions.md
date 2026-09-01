@@ -137,6 +137,19 @@ WSLg のおかげで WSL でも GUI は動くので、GUI が動くかどうか�
 そのかわり、**外部コマンドに依存する記述は実体があるときだけ効くように書く**（`hash <cmd> 2>/dev/null`）。
 標準コマンドを別実装で潰すエイリアスは特に危険で、無い環境ではそのコマンド自体が使えなくなる。
 
+## Windows の machine スコープ更新は管理者のときだけ試す
+
+`mise run update` は非管理者で走ることが多い（`irm | iex` の一本道、管理者 PowerShell を常用しない）。
+一方 winget の machine スコープ更新（Git 等、`Program Files` に入るもの）は管理者権限が要り、非管理者だと
+winget が UAC を出しては毎回失敗する。放置すると毎回の update が同じパッケージへの失敗で埋まる。
+
+そこで `upgradeAllWinget` は昇格を検出し、非管理者では `--disable-interactivity` でプロンプトを抑えて
+machine スコープ分をスキップ扱いにし、「管理者 PowerShell で再実行」を report に残す。user スコープ分は
+非管理者でも更新できるので常に流す。
+
+全体を自動で管理者昇格しないのは、UAC を黙って出すより人が明示的に管理者 PowerShell で叩く方が、ark の
+副作用の見え方として一貫するため（bootstrap.ps1 も machine スコープは同じ方針で案内している）。
+
 ## 1 つの導入に失敗しても止めない（自動化からは `--strict`）
 
 宣言の大半は互いに独立している。1 つ入らなかっただけで dotfiles の展開や自前コマンドのビルドまで

@@ -10,10 +10,8 @@ Microsoft.VisualStudioCode
 # メディア
 VideoLAN.VLC
 
-# 音楽・譜面・音声
+# 音楽・譜面
 Musescore.Musescore
-# ボーカル除去・ステム分割（ローカル実行の OSS）: https://github.com/Anjok07/ultimatevocalremovergui
-Anjok07.UltimateVocalRemover
 
 # 画像
 GIMP.GIMP

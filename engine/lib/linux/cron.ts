@@ -18,13 +18,34 @@ export function buildCrontabWith(existing: string, entry: string): string {
 }
 
 /**
+ * crontab の読み書き。`registerSecurityScanCron` の副作用をテストから差し替えるために切り出す。
+ * 実体は `crontab -l` / `crontab -`（後者は内容を stdin で渡す）。
+ */
+export interface CrontabIo {
+  /** 現在の crontab 全文。未設定のユーザーでは空文字（`crontab -l` は非 0 で終わるが無視する）。 */
+  read: () => Promise<string>;
+  /** crontab を丸ごと置き換える。 */
+  write: (content: string) => Promise<void>;
+}
+
+const systemCrontab: CrontabIo = {
+  read: () => $`crontab -l`.noThrow().text(),
+  write: async (content) => {
+    await $`crontab -`.stdinText(content);
+  },
+};
+
+/**
  * セキュリティスキャンを @reboot で実行する crontab エントリを登録する（重複防止）。
  * command は起動時に単体で成立するコマンド文字列を渡す（cron は PATH が最小なので、
  * mise / deno を絶対パスで解決できる自己完結コマンドにしておくこと）。
  */
-export async function registerSecurityScanCron(command: string): Promise<void> {
+export async function registerSecurityScanCron(
+  command: string,
+  io: CrontabIo = systemCrontab,
+): Promise<void> {
   const entry = `@reboot ${command}`;
-  const existing = await $`crontab -l`.noThrow().text();
-  await $`crontab -`.stdinText(buildCrontabWith(existing, entry));
+  const next = buildCrontabWith(await io.read(), entry);
+  await io.write(next);
   log.success(`✅ 起動時にセキュリティスキャンを実行するよう登録しました: ${entry}`);
 }

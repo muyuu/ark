@@ -40,22 +40,74 @@ async function isInstalled(id: string): Promise<boolean> {
 }
 
 /**
+ * `winget upgrade --all` の引数列。
+ *
+ * バージョン不明のパッケージも対象にするため --include-unknown を付ける。非管理者のときは machine
+ * スコープのパッケージ（Git 等）を更新できず、winget が UAC を出しては毎回失敗するので、
+ * --disable-interactivity でプロンプトを抑えて素早く空振りさせる。
+ */
+export function wingetUpgradeArgv(elevated: boolean): string[] {
+  const argv = [
+    "winget",
+    "upgrade",
+    "--all",
+    "--include-unknown",
+    "--accept-source-agreements",
+    "--accept-package-agreements",
+  ];
+  return elevated ? argv : [...argv, "--disable-interactivity"];
+}
+
+/** `winget install` の引数列。scope を渡さなければ --scope を付けない。 */
+export function wingetInstallArgv(id: string, scope?: "machine" | "user"): string[] {
+  const argv = [
+    "winget",
+    "install",
+    "--id",
+    id,
+    "-e",
+    "--accept-source-agreements",
+    "--accept-package-agreements",
+  ];
+  return scope ? [...argv, "--scope", scope] : argv;
+}
+
+/**
+ * scope 別の winget install 試行順。
+ *
+ * - user: user スコープ → スコープ指定なし
+ * - machine: machine → user → スコープ指定なし
+ *
+ * どちらも最後にスコープ指定なしを試すのは、manifest の installer が `Scope` を宣言していない
+ * （Rustlang.Rustup の rustup-init.exe 等）と、新しめの winget が `--scope` 指定時に
+ * 「該当するインストーラーが見つかりません」で弾くため。スコープ無しなら winget の既定で入る。
+ */
+export function scopeAttempts(scope: "user" | "machine"): Array<"machine" | "user" | undefined> {
+  return scope === "machine" ? ["machine", "user", undefined] : ["user", undefined];
+}
+
+/** scope の試行順に install を呼び、最初に成功したら true を返す。全滅なら false。 */
+export async function installWithFallback(
+  scope: "user" | "machine",
+  install: (scope?: "machine" | "user") => Promise<boolean>,
+): Promise<boolean> {
+  for (const attempt of scopeAttempts(scope)) {
+    if (await install(attempt)) return true;
+  }
+  return false;
+}
+
+/**
  * winget 管理下の全パッケージを最新版へ更新する。導入済みパッケージのバージョンアップはこれが担う
  * （install はスキップ判定するだけで版を上げないため）。
  *
  * 対象は winget 管理下の全アプリで、ark の宣言リストには限らない（brew upgrade -f と同じ広さ）。
- * バージョン不明のパッケージも対象にするため --include-unknown を付ける。個々の更新失敗で全体を
- * 止めないよう noThrow で流す。
- *
- * 非管理者のときは machine スコープのパッケージ（Git 等）を更新できず、winget が UAC を出しては
- * 毎回失敗する。それを避けるため --disable-interactivity でプロンプトを抑え、machine スコープ分は
- * 「管理者で再実行」を促して report に記録する（`mise run update` は通常こちらの経路）。
+ * 個々の更新失敗で全体を止めないよう noThrow で流す。非管理者では machine スコープ分を更新できない
+ * ので、「管理者で再実行」を促して report に記録する（`mise run update` は通常こちらの経路）。
  */
 export async function upgradeAllWinget(): Promise<void> {
   const elevated = await isElevated();
-  const extra = elevated ? [] : ["--disable-interactivity"];
-  await $`winget upgrade --all --include-unknown --accept-source-agreements --accept-package-agreements ${extra}`
-    .noThrow();
+  await $`${wingetUpgradeArgv(elevated)}`.noThrow();
   if (!elevated) {
     log.warning(
       "⚠️ machine スコープのパッケージ更新には管理者権限が要ります。更新するには管理者 PowerShell で" +
@@ -66,10 +118,7 @@ export async function upgradeAllWinget(): Promise<void> {
 }
 
 async function wingetInstall(id: string, scope?: "machine" | "user"): Promise<boolean> {
-  const scopeArg = scope ? ["--scope", scope] : [];
-  const result =
-    await $`winget install --id ${id} -e --accept-source-agreements --accept-package-agreements ${scopeArg}`
-      .noThrow();
+  const result = await $`${wingetInstallArgv(id, scope)}`.noThrow();
   return result.code === 0;
 }
 
@@ -79,9 +128,7 @@ async function wingetInstall(id: string, scope?: "machine" | "user"): Promise<bo
  * - scope="machine": machine（全ユーザー）優先で入れ、machine 非対応（Spotify 等）や非管理者時は
  *   user にフォールバックする（GUI 向け）。アプリ設定はスコープに関係なくユーザーごとに効く。
  *
- * どちらも最後はスコープ指定なしにフォールバックする。manifest の installer が `Scope` を宣言して
- * いない（Rustlang.Rustup の rustup-init.exe 等）と、新しめの winget は `--scope` 指定時に
- * 「該当するインストーラーが見つかりません」で弾く。スコープ無しなら winget の既定で入る。
+ * 試行順とスコープ無しフォールバックの理由は scopeAttempts を参照。
  */
 export async function installWinget(ids: string[], scope: "user" | "machine"): Promise<void> {
   for (const id of ids) {
@@ -90,10 +137,7 @@ export async function installWinget(ids: string[], scope: "user" | "machine"): P
       continue;
     }
     log.info(`📦 ${id} をインストールしています...`);
-    const ok = scope === "machine"
-      ? (await wingetInstall(id, "machine") || await wingetInstall(id, "user") ||
-        await wingetInstall(id))
-      : (await wingetInstall(id, "user") || await wingetInstall(id));
+    const ok = await installWithFallback(scope, (attempt) => wingetInstall(id, attempt));
     if (!ok) {
       log.warning(`⚠️ ${id} の導入に失敗しました（スキップ）`);
       report.record("winget", id);

@@ -76,7 +76,7 @@ worktree は `<repo>.worktrees/<name>/` に置かれる。`~/.config/wt/<repo>.s
 ```
 WARNING: ⚠️ 適用できなかったものがあります:
 WARNING:    apt: dolphin, konsole
-WARNING:    custom: reaper
+WARNING:    custom: zed
 ```
 
 distro の package manager はまとめて 1 コマンドで入れ、失敗したときだけ 1 つずつ入れ直して落ちた物を

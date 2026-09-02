@@ -114,8 +114,8 @@ commands = ["zed", "zeditor"]
 | `tarball` + `dest` | tarball を取得して展開先（既定 `/opt`）に置く                                                 |
 
 これで書けない手順（配布ページの解析やパッチ当てなど）は engine が installer を持つ。その場合は `name`
-だけを宣言して `install` を書かない（例: REAPER）。宣言にも engine にも載らないアプリは manual-tracked
-（記録のみ・audit で欠落検知）にする。
+だけを宣言して `install` を書かない（現在このパターンのアプリは無い）。宣言にも engine にも載らない
+アプリは manual-tracked（記録のみ・audit で欠落検知）にする。
 
 ## dotfiles（config/）
 

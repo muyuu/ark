@@ -11,15 +11,10 @@ import {
 import { detectDistro, type PackageManager } from "./linux/distro.ts";
 import { installArgs } from "./linux/package-manager.ts";
 import { isNativeCommand } from "./linux/wsl.ts";
-import { installReaper } from "./linux/custom/reaper.ts";
-import { installDrumGizmo } from "./macos/custom/drumgizmo.ts";
 
-// 宣言では書けない手順を持つアプリの installer。名前 → 実装で引く。
-// 宣言（app/<os>/custom.toml）に install を書かなければ、ここが使われる。
-const BUILTIN: Record<string, () => Promise<void>> = {
-  reaper: installReaper, // 配布ページの解析と日本語パック・フォント差し替えが要る（Linux）
-  drumgizmo: installDrumGizmo, // 配布物の取得と展開先の組み立てが要る（macOS）
-};
+// 宣言では書けない手順（配布ページの解析・パッチ当てなど）を持つアプリの installer。名前 → 実装で引く。
+// 宣言（app/<os>/custom.toml）に install を書かなければ、ここが使われる。現在は登録なし。
+const BUILTIN: Record<string, () => Promise<void>> = {};
 
 function existsSync(path: string): boolean {
   try {

@@ -21,7 +21,7 @@ commands = ["ghostty"]
   ppa = "ppa:mkasberg/ghostty-ubuntu"
 
 [[app]]
-name = "reaper"
+name = "vendored"
 
 [[app]]
 commands = ["nameless"]
@@ -30,7 +30,7 @@ commands = ["nameless"]
 Deno.test("parseCustomApps: 宣言を順序を保って読み、name の無いものは捨てる", () => {
   const apps = parseCustomApps(MANIFEST);
 
-  assertEquals(apps.map((a) => a.name), ["zed", "ghostty", "reaper"]);
+  assertEquals(apps.map((a) => a.name), ["zed", "ghostty", "vendored"]);
 });
 
 Deno.test("parseCustomApps: 導入済み判定と導入方法を読む", () => {
@@ -43,10 +43,10 @@ Deno.test("parseCustomApps: 導入済み判定と導入方法を読む", () => {
 });
 
 Deno.test("parseCustomApps: install が無い宣言は engine の installer に任せる印になる", () => {
-  const reaper = parseCustomApps(MANIFEST)[2];
+  const vendored = parseCustomApps(MANIFEST)[2];
 
-  assertEquals(reaper.install, {});
-  assertEquals(reaper.commands, []);
+  assertEquals(vendored.install, {});
+  assertEquals(vendored.commands, []);
 });
 
 Deno.test("selectInstallMethod: distro に対応する方法を選ぶ", () => {

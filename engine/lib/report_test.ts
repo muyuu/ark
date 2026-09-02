@@ -12,12 +12,12 @@ Deno.test("InstallReport: 同じ経路の失敗はまとめて 1 行にする", 
   const report = new InstallReport();
   report.record("apt", "dolphin");
   report.record("apt", "konsole");
-  report.record("custom", "reaper");
+  report.record("custom", "zed");
 
   assertEquals(report.hasFailures, true);
   assertEquals(report.summary(), [
     "apt: dolphin, konsole",
-    "custom: reaper",
+    "custom: zed",
   ]);
 });
 

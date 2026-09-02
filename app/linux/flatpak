@@ -7,5 +7,5 @@
 # ブラウザ
 com.brave.Browser
 
-# 音楽・譜面
-org.musescore.MuseScore
+# 画像
+org.gimp.GIMP

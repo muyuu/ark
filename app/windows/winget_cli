@@ -14,3 +14,7 @@ x-motemen.ghq
 # Rust（native Windows でも Rust のビルド・実行はする）
 # リンカに MSVC が要る。VS Build Tools の導入は別途（#39）。
 Rustlang.Rustup
+
+# Vulkan（GPU を使うネイティブビルドに要る。SDK が要るのはビルドするマシンだけで、
+# 実行側はドライバ同梱の vulkan-1.dll で足りる）
+KhronosGroup.VulkanSDK

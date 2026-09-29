@@ -95,7 +95,29 @@
       "Bash(mise tasks)",
       "Bash(mise tasks:*)",
       "Bash(mise where:*)",
-      "Bash(mise env)"
+      "Bash(mise env)",
+      "Bash(cd *)",
+      "Bash(cat *)",
+      "Bash(sort *)",
+      "Bash(uniq *)",
+      "Bash(cut *)",
+      "Bash(diff *)",
+      "Bash(echo *)",
+      "Bash(basename *)",
+      "Bash(dirname *)",
+      "Bash(realpath *)",
+      "Bash(date *)",
+      "Bash(git grep *)",
+      "Bash(git -C * status*)",
+      "Bash(git -C * log*)",
+      "Bash(git -C * diff*)",
+      "Bash(git -C * show *)",
+      "Bash(git -C * branch --show-current)",
+      "Bash(git -C * rev-parse *)",
+      "Bash(git -C * ls-files*)",
+      "Bash(git -C * grep *)",
+      "Bash(git -C * blame *)",
+      "Bash(git -C * fetch*)"
     ],
     "deny": [
       "Read(//**/.env)",
@@ -141,5 +163,6 @@
     "swift-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true
   },
-  "effortLevel": "medium"
+  "effortLevel": "medium",
+  "tui": "fullscreen"
 }

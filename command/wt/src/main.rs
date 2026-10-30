@@ -31,11 +31,18 @@ fn main() -> ExitCode {
         args.remove(0)
     };
 
+    if let Some(help) = subcommand_help(&cmd) {
+        if wants_help(&args) {
+            print!("{help}");
+            return ExitCode::SUCCESS;
+        }
+    }
+
     let result: anyhow::Result<()> = match cmd.as_str() {
         "new" => with_env(|e| cmd_new(&e, &args, SandboxMode::Auto)),
         "sandbox" => with_env(|e| cmd_new(&e, &args, SandboxMode::On)),
-        "enter" => with_env(|e| sandbox::enter(&e, args.first().map(|s| s.as_str()).unwrap_or(""))),
-        "sync" => with_env(|e| sandbox::sync(&e, args.first().map(|s| s.as_str()).unwrap_or(""))),
+        "enter" => with_env(|e| sandbox::enter(&e, name_arg(&args, "入る箱の名前")?)),
+        "sync" => with_env(|e| sandbox::sync(&e, name_arg(&args, "取り込む箱の名前")?)),
         "list" | "ls" => with_env(|e| {
             worktree::list(&e);
             Ok(())
@@ -78,48 +85,100 @@ enum SandboxMode {
     On,
 }
 
-/// `__wt_new`: strip --sandbox/--no-sandbox, parse branch/name, decide box.
-fn cmd_new(env: &Env, args: &[String], base_mode: SandboxMode) -> anyhow::Result<()> {
-    // base_mode::On corresponds to the `sandbox` subcommand which calls
-    // `__wt_new --sandbox "$@"`, i.e. an extra leading --sandbox.
-    let mut mode = match base_mode {
+/// `--help` / `-h` がどこかに含まれていれば true。
+fn wants_help(args: &[String]) -> bool {
+    args.iter().any(|a| a == "--help" || a == "-h")
+}
+
+/// 位置引数に `-` 始まりを許さない。`wt new --foo` の `--foo` がブランチ名として
+/// git に渡り `git worktree add` が走るのを防ぐ。
+fn positional(arg: &str) -> anyhow::Result<&str> {
+    if arg.starts_with('-') {
+        anyhow::bail!("wt: 不明なオプション: {arg}（ヘルプは --help）");
+    }
+    Ok(arg)
+}
+
+fn name_arg<'a>(args: &'a [String], what: &str) -> anyhow::Result<&'a str> {
+    match args.first() {
+        Some(a) => positional(a),
+        None => anyhow::bail!("wt: {what}を指定"),
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum NewTarget {
+    Branch(String),
+    Pr(String),
+}
+
+struct NewArgs {
+    target: NewTarget,
+    name: String,
+    sandbox: SandboxModeState,
+}
+
+/// `wt new` / `wt sandbox` の引数を解釈する。`--sandbox` / `--no-sandbox` 以外の
+/// `-` 始まりはエラー。
+fn parse_new(args: &[String], base_mode: SandboxMode) -> anyhow::Result<NewArgs> {
+    let mut sandbox = match base_mode {
         SandboxMode::On => SandboxModeState::On,
         SandboxMode::Auto => SandboxModeState::Auto,
     };
     let mut rest: Vec<&str> = Vec::new();
     for a in args {
         match a.as_str() {
-            "--sandbox" => mode = SandboxModeState::On,
-            "--no-sandbox" => mode = SandboxModeState::Off,
-            other => rest.push(other),
+            "--sandbox" => sandbox = SandboxModeState::On,
+            "--no-sandbox" => sandbox = SandboxModeState::Off,
+            other => rest.push(positional(other)?),
         }
     }
 
-    let (branch, name): (String, String);
-    if rest.first() == Some(&"pr") {
+    let (target, name) = if rest.first() == Some(&"pr") {
         let pr_num = rest.get(1).copied().unwrap_or("");
         if pr_num.is_empty() {
             anyhow::bail!("wt: PR 番号を指定 (例: wt new pr 123)");
         }
-        let b = gh::pr_head_ref(pr_num);
-        if b.is_empty() {
-            anyhow::bail!("wt: PR #{pr_num} の情報取得に失敗（gh auth は通っている?）");
-        }
-        branch = b;
-        name = format!("pr-{pr_num}");
+        (NewTarget::Pr(pr_num.to_string()), format!("pr-{pr_num}"))
     } else {
-        let b = rest.first().copied().unwrap_or("");
-        if b.is_empty() {
+        let branch = rest.first().copied().unwrap_or("");
+        if branch.is_empty() {
             anyhow::bail!("wt: 'wt new <branch>' または 'wt new pr <番号>'");
         }
-        branch = b.to_string();
-        name = rest
+        let name = rest
             .get(1)
             .map(|s| s.to_string())
             .unwrap_or_else(|| branch.replace('/', "-"));
-    }
+        (NewTarget::Branch(branch.to_string()), name)
+    };
 
-    let use_box = match mode {
+    Ok(NewArgs {
+        target,
+        name,
+        sandbox,
+    })
+}
+
+/// `__wt_new`: parse branch/name, decide box.
+fn cmd_new(env: &Env, args: &[String], base_mode: SandboxMode) -> anyhow::Result<()> {
+    let NewArgs {
+        target,
+        name,
+        sandbox,
+    } = parse_new(args, base_mode)?;
+
+    let branch = match target {
+        NewTarget::Branch(b) => b,
+        NewTarget::Pr(pr_num) => {
+            let b = gh::pr_head_ref(&pr_num);
+            if b.is_empty() {
+                anyhow::bail!("wt: PR #{pr_num} の情報取得に失敗（gh auth は通っている?）");
+            }
+            b
+        }
+    };
+
+    let use_box = match sandbox {
         SandboxModeState::On => true,
         SandboxModeState::Off => false,
         SandboxModeState::Auto => Path::new(&format!("{}/.devcontainer", env.main)).is_dir(),
@@ -139,11 +198,73 @@ enum SandboxModeState {
 }
 
 fn cmd_rm(env: &Env, args: &[String]) -> anyhow::Result<()> {
-    let name = args.first().map(|s| s.as_str()).unwrap_or("");
-    if name.is_empty() {
-        anyhow::bail!("wt: 削除する名前を指定");
-    }
-    worktree::rm(env, name)
+    worktree::rm(env, name_arg(args, "削除する名前")?)
+}
+
+fn subcommand_help(cmd: &str) -> Option<&'static str> {
+    Some(match cmd {
+        "new" => {
+            "使い方: wt new [--sandbox|--no-sandbox] <branch> [<name>]
+       wt new [--sandbox|--no-sandbox] pr <番号>
+
+既存ブランチ（local / origin）から worktree を作る。<name> を省くと branch の '/' を '-' に
+した名前になる。'pr <番号>' は PR の head branch を fetch して pr-<番号> を作る。
+対象リポに .devcontainer があると箱モードになる（--sandbox / --no-sandbox で上書き）。
+
+例:
+  wt new feat/login            → <repo>.worktrees/feat-login/
+  wt new feat/login login      → <repo>.worktrees/login/
+  wt new pr 123                → <repo>.worktrees/pr-123/
+"
+        }
+        "sandbox" => {
+            "使い方: wt sandbox <branch> [<name>]
+       wt sandbox pr <番号>
+
+隔離箱（devcontainer + named volume へ独立 clone）を明示的に作る。引数は wt new と同じ。
+
+例:
+  wt sandbox feat/login
+"
+        }
+        "enter" => {
+            "使い方: wt enter <name>
+
+箱に入って claude を起動する。<name> は wt list に出る箱の名前。
+"
+        }
+        "sync" => {
+            "使い方: wt sync <name>
+
+箱の作業をホストへ取り込む（host←box の read-only fetch・Tower で見える）。
+"
+        }
+        "list" | "ls" => {
+            "使い方: wt list
+
+worktree / 箱 の一覧を PR ステータス付きで出す。
+"
+        }
+        "sweep" => {
+            "使い方: wt sweep
+
+merged / closed PR の worktree・箱 を一括削除する（確認あり）。
+"
+        }
+        "rm" => {
+            "使い方: wt rm <name>
+
+特定の worktree / 箱 を削除する。<name> は wt list に出る名前。
+"
+        }
+        "code" => {
+            "使い方: wt code
+
+VSCode の multi-root workspace（<repo>.code-workspace）を開く。
+"
+        }
+        _ => return None,
+    })
 }
 
 fn print_help() {
@@ -160,6 +281,8 @@ fn print_help() {
   wt sweep               merged/closed PR の worktree・箱 を一括削除（確認あり）
   wt rm <name>           特定 worktree/箱 を削除
   wt code                VSCode の multi-root workspace を開く
+
+各サブコマンドの詳細は `wt <サブコマンド> --help`。
 
 レイアウト:
   <parent>/<repo>/                       メインチェックアウト
@@ -181,4 +304,57 @@ fn print_help() {
     .npmrc
 "#
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn args(v: &[&str]) -> Vec<String> {
+        v.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn new_branch_defaults_name_from_branch() {
+        let p = parse_new(&args(&["feat/x"]), SandboxMode::Auto).unwrap();
+        assert_eq!(p.target, NewTarget::Branch("feat/x".into()));
+        assert_eq!(p.name, "feat-x");
+    }
+
+    #[test]
+    fn new_pr_takes_number() {
+        let p = parse_new(&args(&["pr", "123"]), SandboxMode::Auto).unwrap();
+        assert_eq!(p.target, NewTarget::Pr("123".into()));
+        assert_eq!(p.name, "pr-123");
+    }
+
+    #[test]
+    fn new_rejects_unknown_option_as_branch() {
+        for a in ["--help", "-h", "--foo"] {
+            assert!(parse_new(&args(&[a]), SandboxMode::Auto).is_err(), "{a}");
+        }
+    }
+
+    #[test]
+    fn new_sandbox_flags_still_work() {
+        let p = parse_new(&args(&["--no-sandbox", "feat/x"]), SandboxMode::On).unwrap();
+        assert!(matches!(p.sandbox, SandboxModeState::Off));
+    }
+
+    #[test]
+    fn help_requested_detects_flag_anywhere() {
+        assert!(wants_help(&args(&["--help"])));
+        assert!(wants_help(&args(&["pr", "-h"])));
+        assert!(!wants_help(&args(&["feat/x"])));
+    }
+
+    #[test]
+    fn every_subcommand_has_help() {
+        for c in [
+            "new", "sandbox", "enter", "sync", "list", "ls", "sweep", "rm", "code",
+        ] {
+            assert!(subcommand_help(c).is_some(), "{c}");
+        }
+        assert!(subcommand_help("nope").is_none());
+    }
 }
